@@ -5,7 +5,7 @@ Kept up to date while building, for the SDC Hackathon 2026 Tech & Tools Declarat
 ## AI tools used in development
 | Tool | Used for |
 |---|---|
-| Claude Code (Anthropic, model Claude Opus 5.5) | Scaffolding the Next.js app and writing frontend components from the team's design handoff |
+| Claude Code (Anthropic, model Claude Opus 5.5, with parallel sub-agents) | Scaffolding the Next.js app and writing the frontend screens and components from the team's design handoff |
 | Claude (claude.ai design artifacts) | Hi-fi HTML design references in `design_handoff_supplyswipe/` (not shipped) |
 
 ## Models called at runtime
