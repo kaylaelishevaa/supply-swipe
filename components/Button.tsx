@@ -22,6 +22,7 @@ export function Button({
   onClick,
   className = "",
   height = 52,
+  fontSize,
   type = "button",
 }: {
   variant?: Variant;
@@ -29,6 +30,8 @@ export function Button({
   onClick?: () => void;
   className?: string;
   height?: number;
+  /** Overrides the size picked from the height. */
+  fontSize?: number;
   type?: "button" | "submit";
 }) {
   const disabled = variant === "disabled";
@@ -37,7 +40,7 @@ export function Button({
       type={type}
       onClick={disabled ? undefined : onClick}
       aria-disabled={disabled}
-      style={{ height }}
+      style={{ height, fontSize }}
       className={`flex w-full select-none items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 font-semibold transition-transform ${
         height >= 52 ? "text-[15px]" : height >= 46 ? "text-[14px]" : "text-[13px]"
       } ${styles[variant]} ${className}`}
