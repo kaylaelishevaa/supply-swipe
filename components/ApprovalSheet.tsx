@@ -1,0 +1,134 @@
+"use client";
+// S4 Approval sheet (buyer owner): the deal slides over the dimmed transcript with counterfactual tiles,
+// one teal Approve, Counter via Wakil, and Reject with reason. Nothing is created until both owners tap.
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import * as api from "@/lib/api";
+import type { Deal } from "@/lib/types";
+import { Screen } from "./Screen";
+import { StatusBar } from "./StatusBar";
+import { Wakil } from "./Wakil";
+import { Button } from "./Button";
+import { RejectForm } from "./RejectForm";
+import { RejectedNote, SealedLink, WaitingForOther } from "./ApprovalStates";
+
+const BG_BUBBLES = [
+  { me: true, text: "RM12.00/kg, free delivery, 14-day terms, standing weekly order." },
+  { me: false, text: "RM12.50/kg, delivery waived above 40 kg, 7-day terms." },
+  { me: true, text: "RM12.20/kg, 7-day terms, starting with a 2-week trial." },
+  { me: false, text: "Accepts RM12.20/kg, free delivery, 7-day terms, 2-week trial." },
+];
+
+export function ApprovalSheet({ deal }: { deal: Deal }) {
+  const router = useRouter();
+  const [rejecting, setRejecting] = useState(false);
+  const mine = deal.approvals.some((a) => a.side === "buyer");
+  const theirs = deal.approvals.some((a) => a.side === "supplier");
+
+  const approve = async () => {
+    const r = await api.approve(deal.id, "buyer", "owner");
+    if (r.ok && r.deal.status === "sealed") router.push(`/deal/${deal.id}/sealed`);
+  };
+
+  return (
+    <Screen>
+      <StatusBar />
+      <div className="px-4 pb-4 pt-1">
+        <div className="text-[22px] font-extrabold tracking-[-0.02em]">Live negotiation</div>
+        <div className="mt-0.5 text-[12px] text-muted">Chicken breast, skinless · 50 kg weekly</div>
+      </div>
+      <div className="flex flex-col gap-3 px-4">
+        {BG_BUBBLES.map((b, i) => (
+          <div
+            key={i}
+            className={`max-w-[86%] rounded-[14px] px-3 py-2.5 text-[13px] leading-[1.45] ${b.me ? "self-end bg-purple-soft" : "self-start border border-line bg-white"}`}
+          >
+            {b.text}
+          </div>
+        ))}
+      </div>
+
+      <div className="absolute inset-0 bg-overlay" />
+      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-4 rounded-t-[24px] bg-white px-4 pb-[30px] pt-2.5">
+        <div className="h-1 w-9 self-center rounded-[2px] bg-line" />
+        <div className="flex items-center gap-2.5">
+          <Wakil side="buyer" width={50} height={54} pose="idle" turn={-20} bust style={{ margin: "-8px -4px" }} />
+          <div className="flex-1">
+            <div className="text-[14px] font-semibold">Wakil Mak Ngah found a deal</div>
+            <div className="text-[11px] text-muted">With Ayam Segar Enterprise · 6 of 10 messages</div>
+          </div>
+          {deal.status !== "sealed" && deal.status !== "rejected" && !mine && (
+            <div className="flex h-6 items-center whitespace-nowrap rounded-full bg-amber-soft px-2.5 text-[11px] font-semibold text-amber-text">Needs you</div>
+          )}
+        </div>
+        <div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[40px] font-semibold leading-none tracking-[-0.03em]">RM{deal.terms.weeklyTotal}</span>
+            <span className="text-[14px] text-muted">per week</span>
+          </div>
+          <div className="text-pretty mt-2 text-[13px] leading-[1.5]">
+            RM12.20/kg · 50 kg Mon and Thu before 9am · free delivery above 40 kg · 7-day terms · 2-week trial
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-[12px] border border-line p-2.5">
+            <div className="text-[11px] text-muted">vs last week</div>
+            <div className="mt-1 text-[16px] font-semibold text-teal-text">−RM0.60</div>
+            <div className="text-[11px] text-muted">per kg</div>
+          </div>
+          <div className="rounded-[12px] border border-line p-2.5">
+            <div className="text-[11px] text-muted">vs market</div>
+            <div className="mt-1 text-[16px] font-semibold">+RM0.10</div>
+            <div className="text-[11px] text-muted">PriceCatcher</div>
+          </div>
+          <div className="rounded-[12px] border border-line p-2.5">
+            <div className="text-[11px] text-muted">Haggle saved</div>
+            <div className="mt-1 text-[16px] font-semibold">12 min</div>
+            <div className="text-[11px] text-muted">this week</div>
+          </div>
+        </div>
+        <div className="text-[11px] leading-[1.45] text-muted">Why: market RM12.10, supplier on time 9 of 10, free delivery covers the extra RM0.10.</div>
+
+        {deal.status === "sealed" ? (
+          <SealedLink deal={deal} />
+        ) : deal.status === "rejected" ? (
+          <RejectedNote />
+        ) : mine ? (
+          <WaitingForOther deal={deal} side="buyer" />
+        ) : rejecting ? (
+          <RejectForm
+            onCancel={() => setRejecting(false)}
+            onReject={async (reason) => {
+              await api.reject(deal.id, "buyer", "owner", reason);
+              setRejecting(false);
+            }}
+          />
+        ) : (
+          <div className="flex flex-col gap-2">
+            <Button variant="approve" height={52} fontSize={16} onClick={approve}>
+              Approve
+            </Button>
+            <Button variant="secondary" height={48} onClick={() => router.push(`/approve/${deal.id}/counter`)}>
+              Counter via Wakil
+            </Button>
+            <button onClick={() => setRejecting(true)} className="py-1.5 text-center text-[12px] font-semibold text-coral-text">
+              Reject with reason
+            </button>
+          </div>
+        )}
+
+        {!mine && deal.status !== "sealed" && deal.status !== "rejected" && (
+          <div className="flex items-start gap-2 rounded-[10px] bg-bg px-3 py-2.5 text-[12px] leading-[1.45]">
+            <span className="mt-[5px] h-2 w-2 flex-none rounded-full bg-amber" />
+            <span>
+              {theirs
+                ? "Ayam Segar's owner already approved. Your tap creates the deal."
+                : "Ayam Segar's owner is approving too. Nothing is created until both tap."}
+            </span>
+          </div>
+        )}
+      </div>
+    </Screen>
+  );
+}
