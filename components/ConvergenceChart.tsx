@@ -6,6 +6,19 @@
 import { CartesianGrid, ComposedChart, Line, ReferenceArea, ReferenceDot, ReferenceLine, XAxis, YAxis } from "recharts";
 import type { NegMessage, NegotiationView } from "@/lib/types";
 
+type LabelProps = { viewBox?: { x?: number; y?: number; width?: number } };
+
+/** Small SVG label placed relative to a reference line or dot (desktop chart only). */
+function ChartLabel({ viewBox, dx, dy, text, strong = false }: LabelProps & { dx: number; dy: number; text: string; strong?: boolean }) {
+  const x = (viewBox?.x ?? 0) + (viewBox?.width ?? 0) + dx;
+  const y = (viewBox?.y ?? 0) + dy;
+  return (
+    <text x={x} y={y} fontSize={strong ? 12 : 10} fontWeight={strong ? 600 : 400} fill={strong ? "#1D1B2E" : "#6E6C86"}>
+      {text}
+    </text>
+  );
+}
+
 export function ConvergenceChart({
   view,
   visible,
@@ -60,7 +73,7 @@ export function ConvergenceChart({
         y={view.marketPerKg}
         stroke="#6E6C86"
         strokeDasharray={big ? "4 4" : "3 3"}
-        label={big ? { value: `market ${view.marketPerKg.toFixed(2)}`, position: "insideBottomRight", fontSize: 10, fill: "#6E6C86" } : undefined}
+        label={big ? (p: LabelProps) => <ChartLabel {...p} dx={-150} dy={14} text={`market ${view.marketPerKg.toFixed(2)}`} /> : undefined}
       />
       <Line dataKey="supplier" stroke="#0E8A76" strokeWidth={big ? 2.5 : 2} dot={{ r: big ? 4.5 : 3, fill: "#0E8A76", stroke: "none" }} isAnimationActive={false} connectNulls />
       <Line dataKey="buyer" stroke="#6A5CF0" strokeWidth={big ? 2.5 : 2} dot={{ r: big ? 4.5 : 3, fill: "#6A5CF0", stroke: "none" }} isAnimationActive={false} connectNulls />
@@ -72,7 +85,7 @@ export function ConvergenceChart({
           fill="#fff"
           stroke="#1D1B2E"
           strokeWidth={big ? 2.5 : 2}
-          label={big ? { value: `deal RM${deal.toFixed(2)}`, position: "left", offset: 12, fontSize: 12, fontWeight: 600, fill: "#1D1B2E" } : undefined}
+          label={big ? (p: LabelProps) => <ChartLabel {...p} dx={-86} dy={-12} text={`deal RM${deal.toFixed(2)}`} strong /> : undefined}
         />
       )}
     </ComposedChart>
