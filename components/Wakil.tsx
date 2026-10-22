@@ -33,6 +33,7 @@ export function Wakil({
   bust = false,
   interactive = false,
   spin = false,
+  look,
   className = "",
   style,
 }: {
@@ -44,6 +45,8 @@ export function Wakil({
   bust?: boolean;
   interactive?: boolean;
   spin?: boolean;
+  /** Live look for the S2a preview. Without it the agent reads the saved look for its side. */
+  look?: { color: string; hat: string; face: string };
   className?: string;
   style?: React.CSSProperties;
 }) {
@@ -79,10 +82,10 @@ export function Wakil({
       {mode !== "2d" && (
         <wakil-agent
           ref={ref}
-          saved={side}
-          color={d.color}
-          hat={d.hat}
-          face={d.face}
+          {...(look ? {} : { saved: side })}
+          color={look?.color ?? d.color}
+          hat={look?.hat ?? d.hat}
+          face={look?.face ?? d.face}
           logo={d.logo}
           pose={pose}
           turn={String(turn)}
