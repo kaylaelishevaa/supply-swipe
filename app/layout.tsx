@@ -2,6 +2,7 @@
 
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import { Suspense } from "react";
 import { DemoProvider } from "@/lib/demo-context";
 import { AppShell } from "@/components/AppShell";
@@ -27,6 +28,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <AppShell>{children}</AppShell>
           </Suspense>
         </DemoProvider>
+        {/* 3D Wakil web component. It imports three.js r160 from jsDelivr; the 2D avatar covers failures. */}
+        <Script src="/wakil-agent.js" strategy="afterInteractive" />
       </body>
     </html>
   );
