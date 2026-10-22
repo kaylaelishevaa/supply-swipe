@@ -27,7 +27,7 @@ export default function LimitsPage() {
 
   const save = async () => {
     await api.log(
-      { side: "buyer", kind: "human", staffVisible: false, action: "Saved Wakil limits", actor: "Mak Ngah · owner", reason: `Chicken breast · ${STYLE_LABEL[style]} · staff up to RM500` },
+      { side: "buyer", kind: "human", staffVisible: false, action: "Saved Wakil limits", actor: "Mak Ngah · owner", reason: `Chicken breast · ${STYLE_LABEL[style]} · staff up to RM500`, at: "08:58" },
       "limits:chicken",
     );
     router.push("/requests/new");

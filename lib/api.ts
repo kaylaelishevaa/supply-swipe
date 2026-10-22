@@ -9,7 +9,7 @@ import {
   SUPPLIER_CARDS, TRANSCRIPT, initialDeal, initialLog,
 } from "./mock";
 
-const STORE_KEY = "supplyswipe.store.v1";
+const STORE_KEY = "supplyswipe.store.v2";
 
 interface Store {
   deal: Deal;
@@ -23,7 +23,8 @@ interface Store {
 const fresh = (): Store => ({
   deal: initialDeal(),
   log: initialLog(),
-  logKeys: [],
+  // The seed already holds Aisyah's post and swipe, so repeating those steps adds no duplicates.
+  logKeys: ["post:chicken", "swipe:buyer:ayam-segar"],
   wakil: { buyer: { ...DEFAULT_WAKIL.buyer }, supplier: { ...DEFAULT_WAKIL.supplier } },
   postedRequest: false,
 });
@@ -65,9 +66,15 @@ export function subscribe(fn: () => void) {
 }
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
+/**
+ * Demo clock. The story runs on Wednesday morning (09:02 post → 09:20 sealed), so rows without a
+ * fixed time get one minute after the latest row instead of the real wall-clock time.
+ */
 const nowHHMM = () => {
-  const d = new Date();
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const latest = load().log.reduce((m, r) => (r.at > m ? r.at : m), "09:20");
+  const [h, mi] = latest.split(":").map(Number);
+  const t = h * 60 + mi + 1;
+  return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
 };
 
 // ---------- Activity log (append-only) ----------
@@ -82,7 +89,12 @@ export async function log(row: Omit<LogRow, "id" | "at"> & { at?: string }, key?
 
 /** Owners see every row for their side. Staff see only their own rows. */
 export async function getLog(side: Side, role: Role): Promise<LogRow[]> {
-  const rows = load().log.filter((r) => r.side === side || r.side === "both");
+  // Stable sort by time so a step done out of story order (e.g. limits at 08:58) reads in order.
+  const rows = load()
+    .log.filter((r) => r.side === side || r.side === "both")
+    .map((r, i) => ({ r, i }))
+    .sort((a, b) => (a.r.at === b.r.at ? a.i - b.i : a.r.at < b.r.at ? -1 : 1))
+    .map(({ r }) => r);
   return clone(role === "owner" ? rows : rows.filter((r) => r.staffVisible));
 }
 

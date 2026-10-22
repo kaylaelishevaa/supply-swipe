@@ -6,6 +6,7 @@ import Script from "next/script";
 import { Suspense } from "react";
 import { DemoProvider } from "@/lib/demo-context";
 import { AppShell } from "@/components/AppShell";
+import { DemoPrep } from "@/components/DemoPrep";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "600", "800"], variable: "--font-jakarta" });
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans">
         <DemoProvider>
           <Suspense>
+            <DemoPrep />
             <AppShell>{children}</AppShell>
           </Suspense>
         </DemoProvider>
