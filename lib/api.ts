@@ -256,3 +256,10 @@ export async function resetDemo(): Promise<void> {
   store = fresh();
   save();
 }
+
+// ---------- Own sealed limit (feed card backs) ----------
+
+/** The viewer's OWN sealed limit only (buyer max or supplier floor). Never the counterpart's. */
+export async function getOwnLimit(side: Side): Promise<number> {
+  return SEALED_LIMITS[side];
+}
