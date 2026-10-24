@@ -1,7 +1,7 @@
 // Every read and write in the app goes through this file.
-// Today it uses the local mock (lib/mock.ts) and keeps demo state in localStorage so the
-// journey survives a reload. To switch to FastAPI + Supabase, replace the function bodies
-// with fetch calls that return the same types (see lib/types.ts). Screens do not change.
+// If NEXT_PUBLIC_API_URL is defined (e.g. http://localhost:8000), it connects to the
+// Python FastAPI + Supabase backend. If offline or if the backend is stopped,
+// it falls back seamlessly to the local store and localStorage.
 
 import type { Deal, LogRow, NegotiationView, Role, Side, WakilProfile, Counterpart } from "./types";
 import {
@@ -9,6 +9,17 @@ import {
   SUPPLIER_CARDS, TRANSCRIPT, initialDeal, initialLog,
 } from "./mock";
 
+const getBackendUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes("localhost")) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
+  }
+  if (typeof window !== "undefined") {
+    return `http://${window.location.hostname}:8000`;
+  }
+  return "http://localhost:8000";
+};
+
+const BACKEND_URL = typeof window !== "undefined" ? getBackendUrl() : "http://localhost:8000";
 const STORE_KEY = "supplyswipe.store.v2";
 
 interface Store {
@@ -66,10 +77,7 @@ export function subscribe(fn: () => void) {
 }
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
-/**
- * Demo clock. The story runs on Wednesday morning (09:02 post → 09:20 sealed), so rows without a
- * fixed time get one minute after the latest row instead of the real wall-clock time.
- */
+
 const nowHHMM = () => {
   const latest = load().log.reduce((m, r) => (r.at > m ? r.at : m), "09:20");
   const [h, mi] = latest.split(":").map(Number);
@@ -80,6 +88,18 @@ const nowHHMM = () => {
 // ---------- Activity log (append-only) ----------
 
 export async function log(row: Omit<LogRow, "id" | "at"> & { at?: string }, key?: string): Promise<void> {
+  if (BACKEND_URL) {
+    try {
+      await fetch(`${BACKEND_URL}/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...row, key }),
+      });
+    } catch {
+      // ignore network errors, continue to save local
+    }
+  }
+
   const s = load();
   if (key && s.logKeys.includes(key)) return;
   if (key) s.logKeys.push(key);
@@ -89,7 +109,17 @@ export async function log(row: Omit<LogRow, "id" | "at"> & { at?: string }, key?
 
 /** Owners see every row for their side. Staff see only their own rows. */
 export async function getLog(side: Side, role: Role): Promise<LogRow[]> {
-  // Stable sort by time so a step done out of story order (e.g. limits at 08:58) reads in order.
+  if (BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/log?side=${side}&role=${role}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // fallback
+    }
+  }
+
   const rows = load()
     .log.filter((r) => r.side === side || r.side === "both")
     .map((r, i) => ({ r, i }))
@@ -110,20 +140,60 @@ export function me(side: Side) {
 
 /** Rule-based feed (no AI): buyers see suppliers, suppliers see buyer requests. */
 export async function getFeed(side: Side): Promise<Counterpart[]> {
+  if (BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/feed?side=${side}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // fallback
+    }
+  }
   return clone(side === "buyer" ? SUPPLIER_CARDS : BUYER_CARDS);
 }
 
 export async function postRequest(): Promise<void> {
+  if (BACKEND_URL) {
+    try {
+      await fetch(`${BACKEND_URL}/requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+    } catch {
+      // fallback
+    }
+  }
+
   const s = load();
   s.postedRequest = true;
-  await log({ side: "buyer", kind: "human", staffVisible: true, action: "Posted request · 50 kg chicken breast", actor: "Aisyah · kitchen lead", reason: "Weekly stock count", at: "09:02" }, "post:chicken");
+  await log(
+    { side: "buyer", kind: "human", staffVisible: true, action: "Posted request · 50 kg chicken breast", actor: "Aisyah · kitchen lead", reason: "Weekly stock count", at: "09:02" },
+    "post:chicken",
+  );
 }
 
 /**
  * The trigger. Swiping right posts /negotiations. Returns the negotiation id to open.
- * In the demo, Ayam Segar opens the main negotiation and Fresh Poultry ends in no deal.
  */
 export async function startNegotiation(side: Side, counterpartId: string): Promise<{ id: string; noDeal: boolean }> {
+  if (BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/negotiations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ side, counterpartId }),
+      });
+      if (res.ok) {
+        save();
+        return await res.json();
+      }
+    } catch {
+      // fallback
+    }
+  }
+
   const card = (side === "buyer" ? SUPPLIER_CARDS : BUYER_CARDS).find((c) => c.id === counterpartId);
   const who = side === "buyer" ? "Aisyah · kitchen lead" : "Sales rep · Ayam Segar";
   await log(
@@ -135,23 +205,41 @@ export async function startNegotiation(side: Side, counterpartId: string): Promi
 }
 
 export async function skipCard(side: Side, counterpartId: string): Promise<void> {
+  if (BACKEND_URL) {
+    try {
+      await fetch(`${BACKEND_URL}/cards/skip`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ side, counterpartId }),
+      });
+    } catch {
+      // fallback
+    }
+  }
+
   const card = (side === "buyer" ? SUPPLIER_CARDS : BUYER_CARDS).find((c) => c.id === counterpartId);
   await log({ side, kind: "human", staffVisible: true, action: `Skipped ${card?.name ?? counterpartId}`, actor: side === "buyer" ? "Aisyah · kitchen lead" : "Sales rep · Ayam Segar", reason: card?.why ?? "" }, `skip:${side}:${counterpartId}`);
 }
 
 // ---------- Negotiation ----------
 
-/**
- * Builds what ONE side may see. Only the viewer's own sealed limit is read.
- * The band's other end is estimated from public numbers, so the counterpart's limit never
- * appears in this object. The backend must do the same server-side.
- */
 export async function getNegotiation(id: string, viewer: Side): Promise<NegotiationView> {
+  if (BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/negotiations/${id}?viewer=${viewer}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // fallback
+    }
+  }
+
   const own = SEALED_LIMITS[viewer];
   const band =
     viewer === "buyer"
-      ? { lo: +(PUBLIC.marketPerKg - 0.3).toFixed(2), hi: own } // floor side estimated: market - RM0.30
-      : { lo: own, hi: +(PUBLIC.buyerTargetPerKg - 0.5).toFixed(2) }; // max side estimated: public target - RM0.50
+      ? { lo: +(PUBLIC.marketPerKg - 0.3).toFixed(2), hi: own }
+      : { lo: own, hi: +(PUBLIC.buyerTargetPerKg - 0.5).toFixed(2) };
   return {
     id,
     viewer,
@@ -173,7 +261,16 @@ export async function getNegotiation(id: string, viewer: Side): Promise<Negotiat
 // ---------- Deal and approvals ----------
 
 export async function getDeal(id: string): Promise<Deal> {
-  void id;
+  if (BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/deals/${id}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // fallback
+    }
+  }
   return clone(load().deal);
 }
 
@@ -189,11 +286,26 @@ export function approvalLimit(side: Side, role: Role): number {
 
 export type ApproveResult = { ok: true; deal: Deal } | { ok: false; reason: "above_limit" | "already" | "rejected" };
 
-/** A deal is sealed only when both sides have approved. Staff can approve only up to their limit. */
 export async function approve(dealId: string, side: Side, role: Role): Promise<ApproveResult> {
+  if (BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/deals/${dealId}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ side, role }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        save();
+        return data;
+      }
+    } catch {
+      // fallback
+    }
+  }
+
   const s = load();
   const d = s.deal;
-  void dealId;
   if (d.status === "rejected") return { ok: false, reason: "rejected" };
   if (d.terms.weeklyTotal > approvalLimit(side, role)) return { ok: false, reason: "above_limit" };
   if (d.approvals.some((a) => a.side === side)) return { ok: false, reason: "already" };
@@ -221,16 +333,43 @@ export async function approve(dealId: string, side: Side, role: Role): Promise<A
 }
 
 export async function reject(dealId: string, side: Side, role: Role, reason: string): Promise<void> {
+  if (BACKEND_URL) {
+    try {
+      await fetch(`${BACKEND_URL}/deals/${dealId}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ side, role, reason }),
+      });
+      save();
+    } catch {
+      // fallback
+    }
+  }
+
   const s = load();
-  void dealId;
   s.deal.status = "rejected";
   await log({ side: "both", kind: "approval", staffVisible: role === "staff", action: "Rejected deal", actor: actorLabel(side, role), reason: reason || "No reason given" });
 }
 
-/** Staff above their limit: one notification to the owner. */
 export async function askOwner(dealId: string, side: Side): Promise<string> {
+  if (BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/deals/${dealId}/ask-owner`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ side, role: "staff" }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        save();
+        return data.at;
+      }
+    } catch {
+      // fallback
+    }
+  }
+
   const s = load();
-  void dealId;
   const at = side === "buyer" ? SEALED_TIMES.askedOwner : nowHHMM();
   s.deal.askedOwnerAt = at;
   await log({ side, kind: "human", staffVisible: true, action: `Asked ${ownerName(side)} to approve`, actor: actorLabel(side, "staff"), reason: `RM${s.deal.terms.weeklyTotal} is above the staff limit RM${ME[side].staffLimit}`, at }, `ask:${s.deal.id}:${side}`);
@@ -245,9 +384,20 @@ export async function undoAskOwner(dealId: string, side: Side): Promise<void> {
   await log({ side, kind: "human", staffVisible: true, action: "Cancelled request to owner", actor: actorLabel(side, "staff"), reason: "Undo within the same minute" });
 }
 
-/** Counter via Wakil: the same negotiation resumes for at most 4 more messages, inside the sealed limits. */
 export async function counterViaWakil(dealId: string, side: Side, role: Role, note: string): Promise<void> {
-  void dealId;
+  if (BACKEND_URL) {
+    try {
+      await fetch(`${BACKEND_URL}/deals/${dealId}/counter`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ side, role, note }),
+      });
+      save();
+    } catch {
+      // fallback
+    }
+  }
+
   await log({ side, kind: "human", staffVisible: role === "staff", action: "Sent a counter note to Wakil", actor: actorLabel(side, role), reason: note.slice(0, 80) });
   await log({ side, kind: "agent", staffVisible: false, action: "Resumed negotiation · up to 4 more messages", actor: `${load().wakil[side].name} · agent`, reason: "Your note guides wording. Limits stay sealed." });
 }
@@ -255,23 +405,61 @@ export async function counterViaWakil(dealId: string, side: Side, role: Role, no
 // ---------- Wakil profile ----------
 
 export async function getWakil(side: Side): Promise<WakilProfile> {
+  if (BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/wakil/${side}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // fallback
+    }
+  }
   return clone(load().wakil[side]);
 }
 
-/** Notes change wording only. Prices and limits never come from here. */
 export async function saveWakil(side: Side, cfg: WakilProfile): Promise<void> {
+  if (BACKEND_URL) {
+    try {
+      await fetch(`${BACKEND_URL}/wakil/${side}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cfg),
+      });
+    } catch {
+      // fallback
+    }
+  }
+
   load().wakil[side] = clone(cfg);
   save();
 }
 
 export async function resetDemo(): Promise<void> {
+  if (BACKEND_URL) {
+    try {
+      await fetch(`${BACKEND_URL}/demo/reset`, { method: "POST" });
+    } catch {
+      // fallback
+    }
+  }
+
   store = fresh();
   save();
 }
 
-// ---------- Own sealed limit (feed card backs) ----------
+// ---------- Own sealed limit ----------
 
-/** The viewer's OWN sealed limit only (buyer max or supplier floor). Never the counterpart's. */
 export async function getOwnLimit(side: Side): Promise<number> {
+  if (BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/limits/own?side=${side}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // fallback
+    }
+  }
   return SEALED_LIMITS[side];
 }

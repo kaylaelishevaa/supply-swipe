@@ -3,6 +3,7 @@
 // for at most 4 more messages. The note guides wording only; the sealed limit still holds.
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import * as api from "@/lib/api";
 import { useApi } from "@/lib/useApi";
@@ -12,13 +13,14 @@ import { Screen } from "@/components/Screen";
 import { StatusBar } from "@/components/StatusBar";
 import { Wakil } from "@/components/Wakil";
 import { Button } from "@/components/Button";
-import { LockIcon } from "@/components/Icons";
+import { ChevronLeft, LockIcon, XIcon } from "@/components/Icons";
 import type { WakilPose } from "@/components/WakilAvatar";
 
 const IDEAS = ["Try RM12.00", "Ask for 14-day terms", "Commit 8 weeks", "Deliver by 8am"];
 const SEGS = ["#6A5CF0", "#0E8A76", "#6A5CF0", "#0E8A76", "#6A5CF0", "#0E8A76", "#C9C3F2", "#C9C3F2", "#C9C3F2", "#C9C3F2"];
 
 export default function CounterPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
   const { side, role } = useDemo();
   const own = useApi(() => api.getOwnLimit(side), [side]);
   const [text, setText] = useState("Try RM12.00 if we commit for 8 weeks");
@@ -26,6 +28,46 @@ export default function CounterPage({ params }: { params: { id: string } }) {
   const [pose, setPose] = useState<WakilPose>("idle");
   const t = useRef<ReturnType<typeof setTimeout>>();
   useEffect(() => () => clearTimeout(t.current), []);
+
+  // Drag down to dismiss support
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartY = useRef(0);
+  const sheetRef = useRef<HTMLDivElement>(null);
+
+  const dismiss = () => {
+    if (typeof window !== "undefined" && window.history.length > 2) {
+      router.back();
+    } else {
+      router.push(`/approve/${params.id}`);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (sheetRef.current && sheetRef.current.scrollTop > 10) return;
+    touchStartY.current = e.touches[0].clientY;
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const diff = e.touches[0].clientY - touchStartY.current;
+    if (diff > 0) {
+      setDragY(diff);
+    } else {
+      setDragY(0);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    if (dragY > 80) {
+      dismiss();
+    } else {
+      setDragY(0);
+    }
+  };
 
   const send = async () => {
     if (sent || !text.trim()) return;
@@ -40,17 +82,64 @@ export default function CounterPage({ params }: { params: { id: string } }) {
   return (
     <Screen>
       <StatusBar />
-      <div className="px-4 pt-1">
-        <div className="text-[12px] font-semibold text-amber-text">Deal waiting for you</div>
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-[36px] font-extrabold tracking-[-0.03em]">RM610</span>
-          <span className="text-[13px] text-muted">per week</span>
+      <div className="flex items-center justify-between px-4 pt-1">
+        <button
+          onClick={dismiss}
+          className="flex items-center gap-1.5 rounded-full border border-line bg-white px-2.5 py-1 text-[13px] font-semibold text-ink shadow-ctl"
+        >
+          <ChevronLeft size={14} />
+          <span>Back</span>
+        </button>
+        <div className="text-right">
+          <div className="text-[11px] font-semibold text-amber-text">Deal waiting for you</div>
+          <div className="text-[13px] font-extrabold">RM610/wk</div>
         </div>
-        <div className="text-[13px] text-muted">RM12.20/kg · 50 kg Mon and Thu · 7-day terms</div>
       </div>
-      <div className="absolute inset-0 bg-overlay" />
-      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-3.5 rounded-t-[32px] bg-bg px-4 pb-[30px] pt-2.5">
-        <div className="h-[5px] w-10 self-center rounded-[3px] bg-[#D4D1E4]" />
+
+      <div className="px-4 pt-2">
+        <div className="text-[12px] text-muted">RM12.20/kg · 50 kg Mon and Thu · 7-day terms</div>
+      </div>
+
+      <div
+        className="absolute inset-0 bg-overlay cursor-pointer"
+        onClick={dismiss}
+        aria-label="Dismiss counter"
+      />
+
+      <div
+        ref={sheetRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          transform: `translateY(${dragY}px)`,
+          transition: isDragging ? "none" : "transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)",
+        }}
+        className="no-scrollbar absolute inset-x-0 bottom-0 flex max-h-[88dvh] flex-col gap-3.5 overflow-y-auto rounded-t-[32px] bg-bg px-4 pb-12 pt-2.5 shadow-hero overscroll-contain"
+      >
+        <div className="flex w-full cursor-grab justify-center py-1 active:cursor-grabbing">
+          <div className="h-1.5 w-11 rounded-full bg-[#D4D1E4]" />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <button
+            onClick={dismiss}
+            className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[12px] font-semibold text-muted hover:text-ink active:scale-95 shadow-card"
+            aria-label="Back"
+          >
+            <ChevronLeft size={14} />
+            <span>Back</span>
+          </button>
+          <span className="text-[12px] font-semibold text-muted">Counter Offer</span>
+          <button
+            onClick={dismiss}
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-muted hover:text-ink active:scale-95 shadow-card"
+            aria-label="Close"
+          >
+            <XIcon size={14} color="#7B7891" />
+          </button>
+        </div>
+
         <div className="flex items-center gap-1.5">
           <Wakil side={side} width={76} height={80} pose={pose} turn={-16} bust style={{ margin: "-10px -4px -6px -10px" }} />
           <div className="flex-1">

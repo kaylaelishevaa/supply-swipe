@@ -3,6 +3,7 @@
 // supplier's OWN floor and list price, why the Wakil said yes, Approve / Counter, and a rep-approved row.
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as api from "@/lib/api";
 import { useApi } from "@/lib/useApi";
@@ -13,6 +14,7 @@ import { RoleSwitcher } from "./RoleSwitcher";
 import { BusinessLogo } from "./BusinessLogo";
 import { Button } from "./Button";
 import { TabBar } from "./TabBar";
+import { ChevronLeft } from "./Icons";
 import { RejectForm } from "./RejectForm";
 import { RejectedNote, SealedLink, WaitingForOther } from "./ApprovalStates";
 
@@ -37,9 +39,18 @@ export function ApprovalInbox({ deal }: { deal: Deal }) {
     <Screen>
       <StatusBar />
       <div className="flex items-center justify-between px-4 pb-3.5 pt-1">
-        <div>
-          <div className="text-[22px] font-extrabold tracking-[-0.02em]">Approvals</div>
-          <div className="mt-0.5 text-[12px] text-muted">Ayam Segar · Encik Roslan</div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/feed"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white shadow-card"
+            aria-label="Back to feed"
+          >
+            <ChevronLeft size={16} />
+          </Link>
+          <div>
+            <div className="text-[20px] font-extrabold tracking-[-0.02em]">Approvals</div>
+            <div className="text-[11px] text-muted">Ayam Segar · Encik Roslan</div>
+          </div>
         </div>
         <RoleSwitcher bordered />
       </div>

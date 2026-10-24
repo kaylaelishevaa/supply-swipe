@@ -13,6 +13,7 @@ import { Screen } from "@/components/Screen";
 import { StatusBar } from "@/components/StatusBar";
 import { BusinessLogo } from "@/components/BusinessLogo";
 import { Button } from "@/components/Button";
+import { ChevronLeft } from "@/components/Icons";
 import { PinnedTerms } from "@/components/PinnedTerms";
 import { ChatThread, type ChatMsg } from "@/components/ChatThread";
 import { Composer } from "@/components/Composer";
@@ -48,6 +49,13 @@ export default function DealPage({ params }: { params: { id: string } }) {
     <Screen>
       <StatusBar />
       <div className="flex flex-none items-center gap-2.5 px-4 pb-3 pt-1">
+        <Link
+          href="/feed"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white shadow-card"
+          aria-label="Back to feed"
+        >
+          <ChevronLeft size={16} />
+        </Link>
         <BusinessLogo src={buyer ? LOGO.ayamSegar : LOGO.makNgah} name={buyer ? "Ayam Segar Enterprise" : "Restoran Mak Ngah"} size={36} />
         <div className="flex-1">
           <div className="text-[16px] font-semibold">{buyer ? "Ayam Segar Enterprise" : "Restoran Mak Ngah"}</div>

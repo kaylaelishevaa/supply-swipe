@@ -3,6 +3,7 @@
 // Mismatches turn coral; nothing is paid until it matches or the owner accepts anyway.
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as api from "@/lib/api";
 import { useApi } from "@/lib/useApi";
@@ -13,6 +14,7 @@ import { StatusBar } from "@/components/StatusBar";
 import { BusinessLogo } from "@/components/BusinessLogo";
 import { Wakil } from "@/components/Wakil";
 import { Button } from "@/components/Button";
+import { ChevronLeft } from "@/components/Icons";
 import { InvoiceDiff, compareInvoice, type InvoiceLines } from "@/components/InvoiceDiff";
 
 // Synthetic invoice as received from Ayam Segar.
@@ -42,9 +44,16 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
     <Screen>
       <StatusBar />
       <div className="flex flex-none items-center gap-3 px-4 pb-3 pt-1">
+        <Link
+          href={`/deal/${deal.id}`}
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white shadow-card"
+          aria-label="Back to deal"
+        >
+          <ChevronLeft size={16} />
+        </Link>
         <BusinessLogo src={LOGO.ayamSegar} name="Ayam Segar" size={44} />
         <div className="min-w-0 flex-1">
-          <div className="text-[22px] font-extrabold tracking-[-0.02em]">Invoice check</div>
+          <div className="text-[20px] font-extrabold tracking-[-0.02em]">Invoice check</div>
           <div className="mt-0.5 whitespace-nowrap font-mono text-[11px] text-muted">INV-8841 · week of 27 Oct</div>
         </div>
       </div>
@@ -60,20 +69,12 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
           <span className="text-[11px] text-muted">checked in 2 s</span>
         </div>
         <InvoiceDiff diff={diff} />
-        {diff.overpay > 0 && (
-          <div className="flex items-center justify-between rounded-[16px] bg-coral-soft px-3 py-2.5">
-            <span className="text-[13px] font-semibold">You&apos;d overpay</span>
-            <span className="text-[18px] font-extrabold text-coral-text">RM{diff.overpay.toFixed(2)}</span>
-          </div>
-        )}
       </div>
-      <div className="mx-4 mt-3 flex flex-none items-start gap-1">
-        <Wakil side="buyer" width={64} height={70} pose="think" turn={-20} bust className="-ml-2 -mr-0.5 -mt-1.5" />
-        <div className="flex-1 rounded-[6px_22px_22px_22px] bg-purple-soft px-3 py-2.5 text-[13px] leading-[1.45]">
-          {done === "fix"
-            ? "Sent to Ayam Segar. I asked for RM12.20/kg and free delivery, as pinned. I will check the new invoice."
-            : "Pinned terms say RM12.20/kg and free delivery above 40 kg. I can ask Ayam Segar for a corrected invoice."}
-          <div className="mt-1 text-[11px] text-purple-text">Why: deal #SS-0142, agreed 22 Oct by both owners</div>
+      <div className="mx-4 mt-2.5 flex flex-none items-center gap-2.5 rounded-[18px] bg-purple-soft px-3.5 py-2.5">
+        <Wakil side="buyer" width={38} height={42} turn={-18} bust className="-my-1" />
+        <div className="text-[12px] leading-[1.45] text-purple-text">
+          <span className="font-semibold">Wakil found two mismatches: </span>
+          price is RM0.30/kg higher and delivery fee was charged despite being above 40 kg.
         </div>
       </div>
       <div className="flex-1" />

@@ -39,6 +39,20 @@ export function WaitingForOther({ deal, side }: { deal: Deal; side: Side }) {
       >
         Switch to {BIZ[other]}&apos;s view
       </Button>
+      <div className="mt-1 grid grid-cols-2 gap-2">
+        <Link
+          href="/feed"
+          className="flex h-11 items-center justify-center rounded-full border border-line bg-white text-[13px] font-semibold text-ink shadow-ctl hover:bg-bg"
+        >
+          ← Back to Feed
+        </Link>
+        <Link
+          href={`/deal/${deal.id}`}
+          className="flex h-11 items-center justify-center rounded-full bg-ink text-[13px] font-semibold text-white shadow-ink hover:opacity-90"
+        >
+          Deal chat →
+        </Link>
+      </div>
     </div>
   );
 }
@@ -55,18 +69,26 @@ export function SealedLink({ deal }: { deal: Deal }) {
       <Link href={`/deal/${deal.id}/sealed`} className="flex h-12 items-center justify-center rounded-full bg-ink text-[14px] font-semibold text-white shadow-ink">
         Open the sealed deal
       </Link>
+      <Link href="/feed" className="flex h-10 items-center justify-center rounded-full border border-line bg-white text-[13px] font-semibold text-muted">
+        ← Back to Feed
+      </Link>
     </div>
   );
 }
 
 export function RejectedNote() {
   return (
-    <div className="flex items-center gap-2.5 rounded-[22px] bg-coral-soft px-3.5 py-3">
-      <span className="h-2.5 w-2.5 flex-none rounded-full bg-coral" />
-      <div className="flex-1">
-        <div className="text-[13px] font-semibold text-coral-text">Deal rejected</div>
-        <div className="text-[11px] text-coral-text">No deal was created. The reason is in the log.</div>
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2.5 rounded-[22px] bg-coral-soft px-3.5 py-3">
+        <span className="h-2.5 w-2.5 flex-none rounded-full bg-coral" />
+        <div className="flex-1">
+          <div className="text-[13px] font-semibold text-coral-text">Deal rejected</div>
+          <div className="text-[11px] text-coral-text">No deal was created. The reason is in the log.</div>
+        </div>
       </div>
+      <Link href="/feed" className="flex h-11 items-center justify-center rounded-full border border-line bg-white text-[13px] font-semibold text-ink shadow-ctl">
+        ← Back to Feed
+      </Link>
     </div>
   );
 }

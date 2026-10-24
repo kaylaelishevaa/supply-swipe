@@ -2,6 +2,7 @@
 // B3 History and renegotiate: past weeks with Ayam Segar, trust between the two businesses,
 // and "Renegotiate with memory" when the price moves (the burden is recurring).
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as api from "@/lib/api";
 import { useDemo } from "@/lib/demo-context";
@@ -11,6 +12,7 @@ import { StatusBar } from "@/components/StatusBar";
 import { BusinessLogo } from "@/components/BusinessLogo";
 import { Wakil } from "@/components/Wakil";
 import { Button } from "@/components/Button";
+import { ChevronLeft } from "@/components/Icons";
 import { HistoryRow } from "@/components/HistoryRow";
 import { TabBar } from "@/components/TabBar";
 
@@ -34,9 +36,16 @@ export default function HistoryPage() {
     <Screen>
       <StatusBar />
       <div className="flex flex-none items-center gap-2.5 px-4 pb-3.5 pt-1">
+        <Link
+          href="/feed"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white shadow-card"
+          aria-label="Back to feed"
+        >
+          <ChevronLeft size={16} />
+        </Link>
         <BusinessLogo src={LOGO.ayamSegar} name="Ayam Segar Enterprise" size={40} />
         <div>
-          <div className="text-[22px] font-extrabold tracking-[-0.02em]">Ayam Segar</div>
+          <div className="text-[20px] font-extrabold tracking-[-0.02em]">Ayam Segar</div>
           <div className="text-[12px] text-muted">Chicken breast · since 22 Oct</div>
         </div>
       </div>
