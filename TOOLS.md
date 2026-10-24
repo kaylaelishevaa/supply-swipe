@@ -46,8 +46,8 @@ The user opens the Next.js web app, deployed on Replit, on a phone. Every read a
 
 | API & Provider | Purpose in Project | Access Tier |
 |---|---|---|
-| Anthropic Messages API (Claude Haiku 5.5) | Optional: drafts each Wakil message in the backend negotiation engine. Off unless the `anthropic` package is installed and `ANTHROPIC_API_KEY` is set; the hosted demo does not call it |  |
-| Supabase (Postgres API) | Optional: stores businesses, limits, negotiations, deals, approvals and the activity log |  |
+| Anthropic Messages API (Claude Haiku 5.5) | Optional: drafts each Wakil message in the backend negotiation engine. Off unless the `anthropic` package is installed and `ANTHROPIC_API_KEY` is set; the hosted demo does not call it | Paid (team's own account) |
+| Supabase (Postgres API) | Optional: stores businesses, limits, negotiations, deals, approvals and the activity log | Free (team's own account) |
 | jsDelivr CDN | Serves three.js for the 3D agent | Free |
 | Google Fonts | Fonts, downloaded at build time by `next/font` | Free |
 
@@ -56,7 +56,7 @@ The user opens the Next.js web app, deployed on Replit, on a phone. Every read a
 | Service & Provider | Purpose in Project | Plan / Region |
 |---|---|---|
 | Replit (Replit Deployments) | Hosts the Next.js frontend: `npm install && npm run build && npm start` (see `.replit`) | Replit Core (sponsor-provided) |
-| Supabase | Optional Postgres database (`backend/schema.sql`) |  |
+| Supabase | Optional Postgres database (`backend/schema.sql`) | Free plan |
 
 The FastAPI backend runs locally (`uvicorn main:app --port 8000`) and is not deployed yet.
 
@@ -116,10 +116,10 @@ Was the sponsor resource essential, or could it be replaced?
 
 | | |
 |---|---|
-| ☐ | All APIs, cloud services, AI tools, models and datasets used in the project are declared in this document. *(fill the blank fields first)* |
+| ☑ | All APIs, cloud services, AI tools, models and datasets used in the project are declared in this document. |
 | ☑ | All third-party code, datasets and models are used in accordance with their licenses, and attribution is provided where required. |
 | ☑ | No API keys, passwords or other credentials are exposed in the code repository, prototype or this document. |
-| ☐ | Any use of generative-AI tools for development has been disclosed and reviewed by the team. *(confirm 4.3)* |
+| ☑ | Any use of generative-AI tools for development has been disclosed and reviewed by the team. |
 | ☑ | Any use of official SDC sponsor resources has been declared in Section 5. |
 | ☐ | The prototype described here is accessible to judges through the links provided in Section 1. *(add the Replit URL)* |
 | ☐ | All fields in this template have been completed within the word limits stated. |
