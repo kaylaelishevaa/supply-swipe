@@ -7,7 +7,13 @@ The organizer tutorials require a public GitHub repository, a root README, a roo
 
 The README checklist includes team name, team domain, demo and pitch-video links, run instructions, overall structure, and how Replit and RunPod were used.
 
-Proof should show genuine platform use; the examples include deployed Replit apps/Agent credit usage and RunPod model endpoints/GPU usage. Do not fabricate proof for an unused service. The tutorials do not clearly explain an unused-RunPod exemption.
+Proof should show genuine platform use; the examples include deployed Replit apps/Agent credit usage and RunPod model endpoints/GPU usage. Do not fabricate proof for an unused service.
+
+The user confirmed that the organizers accept Replit-only use for this submission; RunPod proof is not required here.
+
+**Why:** The user explicitly confirmed the organizer exemption when asked about the missing RunPod proof.
+
+**How to apply:** Keep RunPod declared unused. Do not add RunPod infrastructure or fabricate proof to satisfy the generic tutorial examples.
 
 The team portal demonstration includes a mandatory sponsor-technology confirmation. Do not infer eligibility from a checkbox alone; the team must be able to substantiate its claim.
 
