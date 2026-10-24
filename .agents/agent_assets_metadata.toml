@@ -21,3 +21,31 @@ mtime_ms = 1792872952581
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:793efeb7-d678-4f09-9367-0acd8c05240e/2edf1de8-c228-4092-bcc8-4892c3bca560/679179bf-149c-4707-8857-450021450a1d"
 storage_version_token = "1792873007216677"
 content_type = "application/pdf"
+
+[[outputs]]
+id = "N7e-xlZEbfQ43uX29rQrU"
+uri = "file://submission/SDC2026_NylonDaBest_Preliminary.pdf"
+type = "pdf"
+title = "SDC2026 NylonDaBest Preliminary"
+description = "Original Preliminary Proposal, copied unchanged into the submission folder."
+logical_id = "ce4ed68f-afce-4182-86df-1e0ce55e0ef9"
+content_hash = "sha256:f1e581ff42382f000ede0f92e044c8ac140a7933b56916025201f3f521b2ff3c"
+size = 4307432
+mtime_ms = 1792874245128
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:793efeb7-d678-4f09-9367-0acd8c05240e/ce4ed68f-afce-4182-86df-1e0ce55e0ef9/44f05442-f2c3-4807-bc20-edaa7d643b84"
+storage_version_token = "1792874397020914"
+content_type = "application/pdf"
+
+[[outputs]]
+id = "E-q6yHK1TP60nxc9EKC_Q"
+uri = "file://submission/SDC2026_NylonDaBest_TechDeclaration.pdf"
+type = "pdf"
+title = "SDC2026 NylonDaBest Tech Declaration"
+description = "Tech & Tools Declaration with the Replit deployment URL replacing the placeholder."
+logical_id = "b716c878-98be-4943-aa20-494099cabc91"
+content_hash = "sha256:c49cf067e8cb9b3e81f4766736a262390830802d939155851868d5a055fcb1ae"
+size = 4704066
+mtime_ms = 1792874245784
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:793efeb7-d678-4f09-9367-0acd8c05240e/b716c878-98be-4943-aa20-494099cabc91/49d0bb0d-2fdb-4f5b-8321-9b94c71d9833"
+storage_version_token = "1792874401239443"
+content_type = "application/pdf"
