@@ -15,6 +15,12 @@ The user confirmed that the organizers accept Replit-only use for this submissio
 
 **How to apply:** Keep RunPod declared unused. Do not add RunPod infrastructure or fabricate proof to satisfy the generic tutorial examples.
 
+The user elected to retain the pre-correction Tech Declaration, including its older stack wording, with only the previously added deployment URL.
+
+**Why:** After reviewing the stack/tool-disclosure corrections, the user explicitly chose to restore the earlier PDF.
+
+**How to apply:** Do not silently reapply these corrections during a later submission audit. Flag any discrepancies and obtain fresh approval before changing the declaration.
+
 The team portal demonstration includes a mandatory sponsor-technology confirmation. Do not infer eligibility from a checkbox alone; the team must be able to substantiate its claim.
 
 **Why:** These requirements are shown in the organizer's Submission Files Tutorial and GitHub Submission Guide, rather than encoded in the source.
