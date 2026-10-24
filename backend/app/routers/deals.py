@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Path
 from app.schemas import (
     Side, Role, Deal, Approval, ApproveRequest, ApproveResponse, RejectRequest, CounterRequest, LogRow
 )
-from app.database import get_deal, save_deal, append_log, STAFF_LIMITS
+from app.database import get_deal, save_deal, append_log, store, STAFF_LIMITS
 
 router = APIRouter(tags=["Deals"])
 
@@ -161,6 +161,31 @@ async def ask_owner(id: str, payload: ApproveRequest):
         key=f"ask:{deal.id}:{side}"
     )
     return {"at": at_time}
+
+@router.post("/deals/{id}/undo-ask-owner")
+async def undo_ask_owner(id: str, payload: ApproveRequest):
+    """
+    Cancels the staff request to the owner. Asking again afterwards is logged as a new request.
+    """
+    deal = await get_deal(id)
+    side = payload.side
+    deal.askedOwnerAt = None
+    await save_deal(deal)
+    store.log_keys.discard(f"ask:{deal.id}:{side}")
+
+    await append_log(
+        LogRow(
+            id=f"r_undo_{int(time.time()*1000)}",
+            side=side,
+            kind="human",
+            staffVisible=True,
+            action="Cancelled request to owner",
+            actor=actor_label(side, "staff"),
+            reason="Undo within the same minute",
+            at="09:08"
+        )
+    )
+    return {"ok": True}
 
 @router.post("/deals/{id}/counter")
 async def counter_via_wakil(id: str, payload: CounterRequest):

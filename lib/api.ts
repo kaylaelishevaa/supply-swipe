@@ -335,12 +335,16 @@ export async function approve(dealId: string, side: Side, role: Role): Promise<A
 export async function reject(dealId: string, side: Side, role: Role, reason: string): Promise<void> {
   if (BACKEND_URL) {
     try {
-      await fetch(`${BACKEND_URL}/deals/${dealId}/reject`, {
+      const res = await fetch(`${BACKEND_URL}/deals/${dealId}/reject`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ side, role, reason }),
       });
-      save();
+      // The backend writes its own log row, so stop here to avoid a duplicate.
+      if (res.ok) {
+        save();
+        return;
+      }
     } catch {
       // fallback
     }
@@ -377,8 +381,23 @@ export async function askOwner(dealId: string, side: Side): Promise<string> {
 }
 
 export async function undoAskOwner(dealId: string, side: Side): Promise<void> {
+  if (BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/deals/${dealId}/undo-ask-owner`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ side, role: "staff" }),
+      });
+      if (res.ok) {
+        save();
+        return;
+      }
+    } catch {
+      // fallback
+    }
+  }
+
   const s = load();
-  void dealId;
   s.deal.askedOwnerAt = undefined;
   s.logKeys = s.logKeys.filter((k) => k !== `ask:${s.deal.id}:${side}`);
   await log({ side, kind: "human", staffVisible: true, action: "Cancelled request to owner", actor: actorLabel(side, "staff"), reason: "Undo within the same minute" });
@@ -387,12 +406,16 @@ export async function undoAskOwner(dealId: string, side: Side): Promise<void> {
 export async function counterViaWakil(dealId: string, side: Side, role: Role, note: string): Promise<void> {
   if (BACKEND_URL) {
     try {
-      await fetch(`${BACKEND_URL}/deals/${dealId}/counter`, {
+      const res = await fetch(`${BACKEND_URL}/deals/${dealId}/counter`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ side, role, note }),
       });
-      save();
+      // The backend writes both log rows, so stop here to avoid duplicates.
+      if (res.ok) {
+        save();
+        return;
+      }
     } catch {
       // fallback
     }

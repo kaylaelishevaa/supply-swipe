@@ -213,6 +213,28 @@ def test_deals_and_approvals_workflow():
     assert data_so["deal"]["poNumber"] == "PO-2210-0142"
     print(" Deals & Approval Workflow pass!")
 
+def test_undo_ask_owner():
+    print("Testing Undo of Ask Owner...")
+    client.post("/demo/reset")
+    ask = {"side": "buyer", "role": "staff"}
+    asked_rows = lambda: [
+        r for r in client.get("/log?side=buyer&role=staff").json() if r["action"] == "Asked Mak Ngah to approve"
+    ]
+
+    client.post("/deals/SS-0142/ask-owner", json=ask)
+    assert client.get("/deals/SS-0142").json()["askedOwnerAt"] is not None
+
+    res_undo = client.post("/deals/SS-0142/undo-ask-owner", json=ask)
+    assert res_undo.status_code == 200
+    assert client.get("/deals/SS-0142").json()["askedOwnerAt"] is None
+    staff_log = client.get("/log?side=buyer&role=staff").json()
+    assert any(r["action"] == "Cancelled request to owner" for r in staff_log)
+
+    # Asking again after an undo is a new request, so it is logged again
+    client.post("/deals/SS-0142/ask-owner", json=ask)
+    assert len(asked_rows()) == 2
+    print(" Undo ask owner pass!")
+
 def test_invoice_comparison():
     print("Testing PRD Invoice Line-by-Line Comparison...")
     res = client.get("/deals/SS-0142/invoice")
@@ -276,6 +298,7 @@ if __name__ == "__main__":
     test_confidential_limits_and_negotiation_view()
     test_start_negotiation_trigger()
     test_deals_and_approvals_workflow()
+    test_undo_ask_owner()
     test_invoice_comparison()
     test_history_and_memory()
     test_activity_log_role_visibility()
