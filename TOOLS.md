@@ -1,14 +1,14 @@
 # Technical & Tools Declaration (draft)
 
-The source for `submission/SDC2026_<TeamName>_TechDeclaration.pdf`. It follows the official SDC Hackathon 2026 Technical & Tools Declaration template section by section, so each part can be copied into the PDF. Blank fields need the team. Personal contact details go in the PDF only, not in this public repo.
+The source for `submission/SDC2026_SupplySwipe_TechDeclaration.pdf`. It follows the official SDC Hackathon 2026 Technical & Tools Declaration template section by section, so each part can be copied into the PDF. Blank fields need the team. Personal contact details go in the PDF only, not in this public repo.
 
 ## 1. Team & Project Overview
 
 | Field | Details |
 |---|---|
-| Team Name |  |
+| Team Name | SupplySwipe |
 | Project / Solution Name | SupplySwipe (Wakil) |
-| Name (Leader) |  |
+| Name (Leader) | Kayla Elisheva Siwi |
 | Email & Phone (Leader) | In the PDF only |
 | University Affiliation(s) | Monash University Malaysia |
 | Live Prototype URL |  |

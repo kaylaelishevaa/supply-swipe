@@ -10,10 +10,10 @@ An Orbyte module for small F&B businesses. Each business has a private AI agent,
 
 | Field | Details |
 |---|---|
-| **Team Name** |  |
+| **Team Name** | SupplySwipe |
 | **Team Domain** | Domain 2 — Orbyte Smart SME Challenge: Less Busywork, Better Business |
 | **SDG Track (1–17)** | SDG 8 — Decent Work and Economic Growth (primary; targets 8.2, 8.3). SDG 12 — Responsible Consumption and Production (secondary; target 12.3) |
-| **Team Leader** |  |
+| **Team Leader** | Kayla Elisheva Siwi |
 | **University** | Monash University Malaysia |
 | **Number of Members** | 4 |
 
@@ -148,7 +148,7 @@ lib/negotiation.ts  replay hook, rail maths, rule checks (offer within own limit
 lib/demo-context.tsx  side (buyer | supplier) and role (owner | staff); no real auth
 public/wakil-agent.js 3D agent web component (three.js), wrapped by components/Wakil.tsx with a 2D fallback
 backend/        FastAPI app: routers, in-memory store with optional Supabase sync, negotiation engine, tests
-submission/     SDC2026_<TeamName>_Preliminary.pdf and SDC2026_<TeamName>_TechDeclaration.pdf
+submission/     SDC2026_SupplySwipe_Preliminary.pdf and SDC2026_SupplySwipe_TechDeclaration.pdf
 TOOLS.md        draft of the Technical & Tools Declaration, section by section
 LICENSE         Apache License 2.0
 ```
@@ -198,7 +198,7 @@ The FastAPI backend in `backend/` implements these endpoints and returns the sha
 - **Hosting:** the Next.js app is deployed with Replit Deployments at the Live Demo link above. `.replit` builds it with `npm install && npm run build` and serves it with `npm start` on port 3000.
 - **Secrets:** the hosted frontend needs none. The backend reads its keys from `backend/.env`, which is gitignored and never committed.
 
-Proof of use: the Replit deployment URL is given in the Technical & Tools Declaration (`submission/SDC2026_<TeamName>_TechDeclaration.pdf`).
+Proof of use: the Replit deployment URL is given in the Technical & Tools Declaration (`submission/SDC2026_SupplySwipe_TechDeclaration.pdf`).
 
 ## How We Use RunPod
 
@@ -239,20 +239,20 @@ The prototype uses only team-created synthetic data: no real people, businesses,
 |---|---|---|
 | Kayla Elisheva Siwi |  | [@kaylaelishevaa](https://github.com/kaylaelishevaa) |
 | Shariq Nauman |  | [@ShariqNauman](https://github.com/ShariqNauman) |
-|  |  | [@Darren772](https://github.com/Darren772) |
-|  |  |  |
+| Darren Melvern |  | [@Darren772](https://github.com/Darren772) |
+| Muhammad Ahmad |  |  |
 
 ---
 
 ## Submission Checklist
 
-- [ ] Team name, domain (Domain 2) and SDG track filled in
+- [x] Team name, domain (Domain 2) and SDG track filled in
 - [ ] Live demo (Replit) link added, and the Replit proof given in the Tech Declaration
 - [ ] Slide deck link added
 - [ ] Demo video link added (YouTube, 5–7 minutes)
 - [x] RunPod not used (no GPU work), so no RunPod proof is needed
-- [ ] `submission/SDC2026_<TeamName>_Preliminary.pdf` added (official Submission Template)
-- [ ] `submission/SDC2026_<TeamName>_TechDeclaration.pdf` added (official template; see `TOOLS.md`)
+- [ ] `submission/SDC2026_SupplySwipe_Preliminary.pdf` added (official Submission Template)
+- [ ] `submission/SDC2026_SupplySwipe_TechDeclaration.pdf` added (official template; see `TOOLS.md`)
 - [ ] Committee's designated GitHub account(s) added as collaborators
 - [x] Repository public, with the Apache License 2.0 `LICENSE`
 - [ ] "How to Run" steps verified on Replit
