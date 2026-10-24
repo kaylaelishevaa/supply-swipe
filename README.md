@@ -1,20 +1,88 @@
 # SupplySwipe (Wakil)
 
-An Orbyte module for small F&B businesses. Each business has a private AI agent, a **Wakil**, that negotiates the weekly supply deal with the other side's Wakil. The owners approve the result instead of haggling on WhatsApp.
+> Two AI agents negotiate the weekly supply deal between a small F&B business and its supplier, inside each side's sealed price limit, and both owners approve the result with one tap.
 
-SDC Hackathon 2026 · Domain 2 (Orbyte Smart SME Challenge). The prototype uses synthetic data only.
+An Orbyte module for small F&B businesses. Each business has a private AI agent, a **Wakil**, that negotiates the weekly supply deal with the other side's Wakil. The owners approve the result instead of haggling on WhatsApp. The prototype uses synthetic data only.
 
-**The journey:** swipe right (trigger) → profiles, sealed limits and the market price (data) → two Wakils, at most 10 validated messages (decision) → both owners approve, staff only within their limit (human approval) → deal record, pinned terms and invoice check (outcome) → append-only activity log.
+---
 
-## Run it
+## Team Information
+
+| Field | Details |
+|---|---|
+| **Team Name** | TODO |
+| **Team Domain** | Domain 2 — Orbyte Smart SME Challenge: Less Busywork, Better Business |
+| **SDG Track (1–17)** | SDG 8 — Decent Work and Economic Growth (primary; targets 8.2, 8.3). SDG 12 — Responsible Consumption and Production (secondary; target 12.3) |
+| **Team Leader** | TODO |
+| **University** | Monash University Malaysia (TODO: add others) |
+| **Number of Members** | 4 |
+
+## Links
+
+| Resource | Link |
+|---|---|
+| GitHub Repository | https://github.com/kaylaelishevaa/supply-swipe |
+| Live Demo (Replit) | TODO: Replit deployment URL |
+| Guided demo for judges | TODO: Replit deployment URL + `/demo` |
+| Slide Deck | TODO |
+| Demo Video (YouTube) | TODO |
+
+---
+
+## Overview
+
+### Problem
+
+Small cafés and restaurants renegotiate prices with three to eight suppliers almost every week, on WhatsApp: a price question, a counter, a delivery question, a phone call, then an invoice that does not match the chat. Suppliers repeat the same quote to dozens of leads. The burden is not ordering; it is negotiating and remembering what was agreed.
+
+### Solution
+
+Each business sets its limits once: a public target and a sealed maximum (buyer) or floor (supplier). A swipe right starts a negotiation between the two businesses' Wakils: at most 10 structured messages, with code checking every offer against the sender's own sealed limit. The deal stays a proposal until both owners approve, and staff can approve only under an owner-set limit. Approval pins the terms, opens a chat that cannot change them, checks the supplier's invoice against them, and writes every step to an append-only activity log.
+
+### Key Features
+
+- **One complete journey** — swipe right (trigger) → profiles, sealed limits and the market price (data) → two Wakils negotiate, every message rule-checked (decision) → both owners approve, staff only within their limit (human approval) → pinned terms, invoice check and activity log (outcome).
+- **Sealed limits** — each side's maximum or floor is used only by its own Wakil and is never sent to the other side.
+- **People stay in control** — owner and staff roles, a staff approval limit (RM500 buyer, RM300 supplier), "Ask owner to approve", and counter or reject with a reason.
+- **Invoice check** — the supplier's invoice is compared line by line with the pinned terms before anyone pays.
+- **Append-only activity log** — staff see their own actions; owners see everything, including drafts the rules blocked.
+- **Easy to learn** — swipe cards, one teal Approve button, a plain-language reason on every offer, and a guided `/demo`.
+
+### Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS, Recharts, three.js (optional 3D agent) |
+| Backend | Python, FastAPI (negotiation engine, rule checks, approvals, activity log) |
+| Database | Supabase Postgres (optional; in-memory seed data without it) |
+| AI | Claude Haiku 5.5 through the Anthropic API (optional; rule-based fallback) |
+| Hosting / Dev | Replit |
+
+### Business benefit and SDG
+
+Phase 2 targets from our proposal: 90% fewer owner messages per agreed deal (one approval instead of a WhatsApp thread), request to approved deal in under 5 minutes, 0 limit breaches in 50 test negotiations, and 100% of invoices compared with the pinned terms before payment. This supports SDG 8.3 (MSME productivity and growth), 8.2 (productivity through technology) and 12.3 (less food waste: quantities agreed against real need, invoices checked against agreed terms).
+
+### Orbyte fit and reuse
+
+SupplySwipe is built as an Orbyte module: business profiles, staff roles and limits come from the Orbyte hub (simulated here), and a sealed deal is saved back as a purchase order (simulated). The negotiation runs behind an API (`POST /negotiations`) that other Orbyte modules could call, and the same flow works for any recurring supply item and any pair of SMEs.
+
+---
+
+## How to Run
+
+### Option 1 — Run on Replit (Recommended)
+
+1. Import this repository into Replit (**Create Repl → Import from GitHub**).
+2. Click **Run**. `.replit` runs `npm install && npm run build && npm start` and serves the app on port 3000. No secrets are needed.
+3. Use **Deploy** for the public URL. Open `/demo` for the guided 20-step story.
+
+### Option 2 — Run Locally
 
 ```bash
 npm install
 npm run dev            # http://localhost:3001
 npm run build && npm start   # production; listens on 0.0.0.0:$PORT (default 3000)
 ```
-
-On **Replit**, import the repo and press Run. `.replit` builds the app and serves it on port 3000. Use Deploy to get the public URL.
 
 The frontend needs no environment variables or API keys. In the browser, `lib/api.ts` first calls the FastAPI backend on port 8000 of the same host (or `NEXT_PUBLIC_API_URL`, if it is set to a non-localhost URL). If the backend can't be reached, every call falls back to the built-in synthetic data and `localStorage`. Replit deploys only the frontend, so the hosted demo always runs on that fallback.
 
@@ -28,7 +96,14 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-Without Supabase credentials it serves in-memory seed data. See `backend/README.md` for Supabase setup, the optional Claude negotiation engine and the tests.
+Without Supabase credentials it serves in-memory seed data. See `backend/README.md` for Supabase setup and the optional Claude negotiation engine.
+
+### Run Tests
+
+```bash
+cd backend && python test_api.py     # backend API tests
+npm run lint && npx tsc --noEmit     # frontend lint and type check
+```
 
 ## Where to start
 
@@ -61,7 +136,7 @@ The demo state (deal, approvals, log, Wakil look) is kept in `localStorage`, or 
 | B3 | `/history/[supplierId]` | Week 3, renegotiate with memory (replays the S3 negotiation) |
 | P1 | `/listings` | Supplier items and sealed floors (supplier side only) |
 
-## Code map
+## Project Structure
 
 ```
 app/            one folder per route (see table above), layout.tsx = fonts + DemoProvider + phone frame
@@ -73,6 +148,20 @@ lib/negotiation.ts  replay hook, rail maths, rule checks (offer within own limit
 lib/demo-context.tsx  side (buyer | supplier) and role (owner | staff); no real auth
 public/wakil-agent.js 3D agent web component (three.js), wrapped by components/Wakil.tsx with a 2D fallback
 backend/        FastAPI app: routers, in-memory store with optional Supabase sync, negotiation engine, tests
+submission/     SDC2026_<TeamName>_Preliminary.pdf and SDC2026_<TeamName>_TechDeclaration.pdf
+TOOLS.md        draft of the Technical & Tools Declaration, section by section
+LICENSE         Apache License 2.0
+```
+
+### Architecture
+
+```
+Phone browser ──► Next.js app on Replit (screens, replay, rule checks for display)
+                    │  lib/api.ts — falls back to built-in synthetic data if the backend is unreachable
+                    ▼
+                  FastAPI backend (negotiation engine, rule checks, approvals, activity log)
+                    ├──► Supabase Postgres (optional)
+                    └──► Anthropic API · Claude Haiku 5.5 (optional; rule-based fallback)
 ```
 
 ## Rules the code keeps
@@ -102,6 +191,73 @@ The FastAPI backend in `backend/` implements these endpoints and returns the sha
 | `getOwnLimit(side)` | `GET /limits/own?side=` (the caller's own limit only) |
 | `resetDemo()` | `POST /demo/reset` |
 
-## Licence and tools
+---
 
-Apache-2.0, see `LICENSE`. AI tools and libraries used are listed in `TOOLS.md`. The design references live outside this repo, in the team's handoff folder.
+## How We Use Replit *(Required)*
+
+- **Hosting:** the Next.js app is deployed with Replit Deployments at the Live Demo link above. `.replit` builds it with `npm install && npm run build` and serves it with `npm start` on port 3000.
+- **Secrets:** the hosted frontend needs none. The backend reads its keys from `backend/.env`, which is gitignored and never committed.
+
+Proof of use: the Replit deployment URL is given in the Technical & Tools Declaration (`submission/SDC2026_<TeamName>_TechDeclaration.pdf`).
+
+## How We Use RunPod
+
+Not used. The handbook asks teams to use RunPod for work that needs a GPU (training, fine-tuning or GPU inference). SupplySwipe has none: the rule checks, feed and approvals run on CPU, and the optional language model is called through the Anthropic API. So there is no RunPod proof of use.
+
+## Privacy and PDPA
+
+The prototype uses only team-created synthetic data: no real people, businesses, prices or chats. In a real deployment we would apply Malaysia's PDPA principles as follows:
+
+- **Notice, choice and purpose:** businesses agree to share only what a negotiation needs (items, quantities, delivery days, prices), and it is used only for that.
+- **Disclosure:** a sealed limit is read only by its own business's Wakil. The language model gets that business's own limit and public numbers, never personal data.
+- **Security:** real sign-in and roles, row-level security in Postgres, keys in secrets, and encryption in transit and at rest.
+- **Retention, access and correction:** deal records and logs are kept for a period each business sets, and owners can see and correct their data.
+
+## Hardest risk and fallback
+
+- **A language model offering past a sealed limit or revealing it.** Code checks every offer and draft against the sender's own limit before it is used, and a rule-based move replaces anything that fails. The model can be switched off entirely and the negotiation still completes. Next step: code picks every price, and the model only writes the wording.
+- **The backend or model being unavailable during a demo.** The frontend runs the whole journey on built-in synthetic data, which is what the hosted demo uses.
+
+## Challenges & Learnings
+
+- **Keeping sealed limits sealed:** every negotiation view is built per side, and the agreement band's far end is estimated from public numbers so the screen never encodes the other side's limit.
+- **Bounded autonomy:** owners set limits once, agents work inside them, and a person approves every deal. We rejected both a chatbot (the owner would still be haggling) and full autonomy (owners won't let software commit their money).
+- **Rules in code, language from the model:** ranking, validation and approvals in code keep cost and errors low and make the journey testable.
+
+## Future Improvements
+
+- [ ] Code picks every price; the model only writes the message text and reasons
+- [ ] Check every field of a draft for sealed values, and log every blocked draft
+- [ ] Deploy the backend next to the frontend on Replit, with keys in Replit Secrets
+- [ ] Real sign-in and roles, so sealed limits and logs are enforced per user
+- [ ] Wire the rule-based feed ranker into `/feed`, and stream messages with Supabase Realtime
+- [ ] Resume the negotiation after "Counter via Wakil", using the owner's note and Wakil memory
+
+## Team
+
+| Name | Role | GitHub |
+|---|---|---|
+| TODO | TODO | [@kaylaelishevaa](https://github.com/kaylaelishevaa) |
+| Shariq Nauman | TODO | TODO |
+| TODO | TODO | TODO |
+| TODO | TODO | TODO |
+
+---
+
+## Submission Checklist
+
+- [ ] Team name, domain (Domain 2) and SDG track filled in
+- [ ] Live demo (Replit) link added, and the Replit proof given in the Tech Declaration
+- [ ] Slide deck link added
+- [ ] Demo video link added (YouTube, 5–7 minutes)
+- [x] RunPod not used (no GPU work), so no RunPod proof is needed
+- [ ] `submission/SDC2026_<TeamName>_Preliminary.pdf` added (official Submission Template)
+- [ ] `submission/SDC2026_<TeamName>_TechDeclaration.pdf` added (official template; see `TOOLS.md`)
+- [ ] Committee's designated GitHub account(s) added as collaborators
+- [x] Repository public, with the Apache License 2.0 `LICENSE`
+- [ ] "How to Run" steps verified on Replit
+- [x] No API keys or secrets committed
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE). AI tools and libraries used are listed in `TOOLS.md`. The design references live outside this repo, in the team's handoff folder.
