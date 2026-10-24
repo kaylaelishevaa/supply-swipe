@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "klpsl0QnlFDE6nDz425MS"
+uri = "file://.local/outputs/SupplySwipe-Pitch-Deck.pdf"
+type = "pdf"
+title = "SupplySwipe Pitch Deck.pdf"
