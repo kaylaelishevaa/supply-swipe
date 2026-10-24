@@ -6,3 +6,18 @@ id = "klpsl0QnlFDE6nDz425MS"
 uri = "file://.local/outputs/SupplySwipe-Pitch-Deck.pdf"
 type = "pdf"
 title = "SupplySwipe Pitch Deck.pdf"
+logical_id = "61d4803f-541b-436c-894c-66a2f60658af"
+
+[[outputs]]
+id = "0isth4gkqEYMFHuSuA8jn"
+uri = "file://submission/REPLIT%20PROOF%20OF%20USE.pdf"
+type = "pdf"
+title = "REPLIT PROOF OF USE"
+description = "Four Replit screenshots compiled into a four-page PDF submission."
+logical_id = "2edf1de8-c228-4092-bcc8-4892c3bca560"
+content_hash = "sha256:edda50bcda35115d7cc08463ddb64c7dee8b7b9679d2b75a6301be27a8417546"
+size = 1111017
+mtime_ms = 1792872952581
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:793efeb7-d678-4f09-9367-0acd8c05240e/2edf1de8-c228-4092-bcc8-4892c3bca560/679179bf-149c-4707-8857-450021450a1d"
+storage_version_token = "1792873007216677"
+content_type = "application/pdf"
