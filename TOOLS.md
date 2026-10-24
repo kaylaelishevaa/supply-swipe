@@ -18,7 +18,7 @@ The source for `submission/SDC2026_<TeamName>_TechDeclaration.pdf`. It follows t
 
 ### 2.1 System Architecture Overview
 
-The user opens the Next.js web app, deployed on Replit, on a phone. Every read and write goes through one module (`lib/api.ts`), which calls the Python FastAPI backend and falls back to built-in synthetic data when the backend can't be reached; the hosted demo runs on that fallback. The backend runs the negotiation engine: two Wakil agents exchange at most 20 structured messages, and code checks each offer against the sender's own sealed limit. It also enforces staff approval limits, seals a deal only when both owners approve, and keeps an append-only activity log. Data is held in memory or, optionally, synced to Supabase Postgres. Optionally, the engine asks Claude Haiku 5.5 (Anthropic API) to draft each message as JSON; without it, a rule-based fallback produces the negotiation.
+The user opens the Next.js web app, deployed on Replit, on a phone. Every read and write goes through one module (`lib/api.ts`), which calls the Python FastAPI backend and falls back to built-in synthetic data when the backend can't be reached. That is how the hosted demo runs: a rule-based engine in the browser (`lib/engine.ts`) generates each negotiation from the two businesses' public prices and sealed limits, code picks every price, and no model is called. The backend runs the negotiation engine: two Wakil agents exchange at most 20 structured messages, and code checks each offer against the sender's own sealed limit. It also enforces staff approval limits, seals a deal only when both owners approve, and keeps an append-only activity log. Data is held in memory or, optionally, synced to Supabase Postgres. Optionally, the engine asks Claude Haiku 5.5 (Anthropic API) to draft each message as JSON; without it, a rule-based fallback produces the negotiation.
 
 ### 2.2 Languages, Frameworks & Libraries
 
@@ -110,7 +110,7 @@ Was the sponsor resource essential, or could it be replaced?
 
 ### 6.2 Known Limitations & Risks
 
-> The language model can return invalid JSON or an offer outside the sender's sealed limit. Code checks the price and message text against the sender's own limit, and a rule-based move replaces anything that fails or errors. The model's reason and headline fields are not yet checked for sealed values, so the next step is for code to pick every price and the model to write only the wording. The engine depends on one provider (Anthropic) but runs fully without it. There is no real sign-in yet: side and role come from the request, so sealed limits are enforced in the app, not per user. The hosted demo replays a fixed synthetic negotiation.
+> The language model can return invalid JSON or an offer outside the sender's sealed limit. Code checks the price and message text against the sender's own limit, and a rule-based move replaces anything that fails or errors. The model's reason and headline fields are not yet checked for sealed values, so the next step is for code to pick every price and the model to write only the wording. The engine depends on one provider (Anthropic) but runs fully without it. There is no real sign-in yet: side and role come from the request, so sealed limits are enforced in the app, not per user. The hosted demo uses the rule-based engine in the browser, where code picks every price and no model is called.
 
 ## 7. Compliance & Readiness Checklist
 

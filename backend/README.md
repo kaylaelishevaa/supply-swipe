@@ -31,7 +31,7 @@ The API will be live at:
 - **Health Check**: `http://localhost:8000/health`
 
 ### 1.2 Optional: Claude negotiation engine
-`POST /negotiations` runs `app/services/negotiation_engine.py`. When the `anthropic` package is installed (`pip install anthropic`; it is not in `requirements.txt`) and `ANTHROPIC_API_KEY` is set, the two Wakils draft their messages with `claude-haiku-5-5`. Otherwise a rule-based fallback produces the same synthetic transcript the frontend shows.
+`POST /negotiations` runs `app/services/negotiation_engine.py`. When the `anthropic` package is installed (`pip install anthropic`; it is not in `requirements.txt`) and `ANTHROPIC_API_KEY` is set, the two Wakils draft their messages with `claude-haiku-5-5`. Otherwise a rule-based fallback produces a scripted transcript. Without the backend, the frontend generates each negotiation itself with `lib/engine.ts`.
 
 Without Supabase, `GET /negotiations/:id` still returns the seeded transcript, while the deal terms take the engine's result.
 
