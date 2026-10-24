@@ -10,11 +10,11 @@ An Orbyte module for small F&B businesses. Each business has a private AI agent,
 
 | Field | Details |
 |---|---|
-| **Team Name** | TODO |
+| **Team Name** |  |
 | **Team Domain** | Domain 2 — Orbyte Smart SME Challenge: Less Busywork, Better Business |
 | **SDG Track (1–17)** | SDG 8 — Decent Work and Economic Growth (primary; targets 8.2, 8.3). SDG 12 — Responsible Consumption and Production (secondary; target 12.3) |
-| **Team Leader** | TODO |
-| **University** | Monash University Malaysia (TODO: add others) |
+| **Team Leader** |  |
+| **University** | Monash University Malaysia |
 | **Number of Members** | 4 |
 
 ## Links
@@ -22,10 +22,10 @@ An Orbyte module for small F&B businesses. Each business has a private AI agent,
 | Resource | Link |
 |---|---|
 | GitHub Repository | https://github.com/kaylaelishevaa/supply-swipe |
-| Live Demo (Replit) | TODO: Replit deployment URL |
-| Guided demo for judges | TODO: Replit deployment URL + `/demo` |
-| Slide Deck | TODO |
-| Demo Video (YouTube) | TODO |
+| Live Demo (Replit) |  |
+| Guided demo for judges | Live Demo link + `/demo` |
+| Slide Deck |  |
+| Demo Video (YouTube) |  |
 
 ---
 
@@ -237,10 +237,10 @@ The prototype uses only team-created synthetic data: no real people, businesses,
 
 | Name | Role | GitHub |
 |---|---|---|
-| TODO | TODO | [@kaylaelishevaa](https://github.com/kaylaelishevaa) |
-| Shariq Nauman | TODO | TODO |
-| TODO | TODO | TODO |
-| TODO | TODO | TODO |
+| Kayla Elisheva Siwi |  | [@kaylaelishevaa](https://github.com/kaylaelishevaa) |
+| Shariq Nauman |  | [@ShariqNauman](https://github.com/ShariqNauman) |
+|  |  | [@Darren772](https://github.com/Darren772) |
+|  |  |  |
 
 ---
 
