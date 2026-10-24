@@ -1,8 +1,11 @@
 import os
 from typing import List
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Load .env file from the backend folder
+# Load .env file from the backend folder regardless of current working directory
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BACKEND_DIR / ".env")
 load_dotenv()
 
 class Settings:

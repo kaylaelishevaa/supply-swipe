@@ -220,6 +220,7 @@ def test_undo_ask_owner():
     asked_rows = lambda: [
         r for r in client.get("/log?side=buyer&role=staff").json() if r["action"] == "Asked Mak Ngah to approve"
     ]
+    initial_count = len(asked_rows())
 
     client.post("/deals/SS-0142/ask-owner", json=ask)
     assert client.get("/deals/SS-0142").json()["askedOwnerAt"] is not None
@@ -232,7 +233,7 @@ def test_undo_ask_owner():
 
     # Asking again after an undo is a new request, so it is logged again
     client.post("/deals/SS-0142/ask-owner", json=ask)
-    assert len(asked_rows()) == 2
+    assert len(asked_rows()) == initial_count + 2
     print(" Undo ask owner pass!")
 
 def test_invoice_comparison():
