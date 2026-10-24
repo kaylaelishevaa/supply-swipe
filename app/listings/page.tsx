@@ -8,6 +8,9 @@ import { TabBar } from "@/components/TabBar";
 import { Button } from "@/components/Button";
 import { LockIcon } from "@/components/Icons";
 import { useDemo } from "@/lib/demo-context";
+import * as api from "@/lib/api";
+import { useApi } from "@/lib/useApi";
+import { rm } from "@/lib/negotiation";
 
 function FloorRow({ label, value }: { label: string; value: string }) {
   return (
@@ -23,6 +26,7 @@ function FloorRow({ label, value }: { label: string; value: string }) {
 
 export default function ListingsPage() {
   const { side, setSide } = useDemo();
+  const floor = useApi(() => api.getOwnLimit("supplier"), []);
 
   if (side !== "supplier") {
     return (
@@ -64,7 +68,7 @@ export default function ListingsPage() {
             <span>MOQ 30 kg</span>
             <span>Capacity 1,200 kg/wk</span>
           </div>
-          <FloorRow label="Floor · only your Wakil sees this" value="RM11.80" />
+          <FloorRow label="Floor · only your Wakil sees this" value={floor != null ? rm(floor) : ""} />
         </div>
 
         <div className="flex flex-col gap-2.5 rounded-[14px] border-[1.5px] border-amber bg-white p-3.5">

@@ -1,5 +1,7 @@
 // Staff approval limit vs this deal: teal-soft up to the limit, coral-soft beyond it, ink marker at the limit.
 
+import { rmTotal } from "@/lib/negotiation";
+
 export function LimitBar({ limit, amount }: { limit: number; amount: number }) {
   const over = amount > limit;
   const pct = over ? (limit / amount) * 100 : 100;
@@ -18,7 +20,7 @@ export function LimitBar({ limit, amount }: { limit: number; amount: number }) {
       <div className="flex justify-between text-[11px] text-muted">
         <span>RM0</span>
         <span>limit RM{limit}</span>
-        <span className={over ? "font-semibold text-coral-text" : ""}>this deal RM{amount}</span>
+        <span className={over ? "font-semibold text-coral-text" : ""}>this deal {rmTotal(amount)}</span>
       </div>
     </div>
   );

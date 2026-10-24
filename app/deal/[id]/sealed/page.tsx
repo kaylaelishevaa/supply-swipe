@@ -5,6 +5,7 @@
 import Link from "next/link";
 import * as api from "@/lib/api";
 import { useApi } from "@/lib/useApi";
+import { rmTotal, termsLine } from "@/lib/negotiation";
 import type { Approval } from "@/lib/types";
 import { Screen } from "@/components/Screen";
 import { StatusBar } from "@/components/StatusBar";
@@ -73,9 +74,9 @@ export default function SealedPage({ params }: { params: { id: string } }) {
       <div className="mx-4 mt-4 flex flex-none flex-col gap-3 rounded-[28px] bg-white p-4 shadow-hero">
         <div className="flex items-baseline justify-between">
           <span className="text-[24px] font-extrabold tracking-[-0.02em]">RM{deal.terms.pricePerKg.toFixed(2)}/kg</span>
-          <span className="whitespace-nowrap text-[13px] text-muted">RM{deal.terms.weeklyTotal} per week</span>
+          <span className="whitespace-nowrap text-[13px] text-muted">{rmTotal(deal.terms.weeklyTotal)} per week</span>
         </div>
-        <div className="text-[12px] leading-[1.5] text-muted">50 kg Mon and Thu before 9am · free delivery above 40 kg · 7-day terms · 2-week trial from 27 Oct</div>
+        <div className="text-[12px] leading-[1.5] text-muted">{termsLine(deal.terms, { price: false })} from 27 Oct</div>
         <div className="h-px bg-line" />
         {ordered.map((a) => (
           <ApprovalRow key={a.side} a={a} />

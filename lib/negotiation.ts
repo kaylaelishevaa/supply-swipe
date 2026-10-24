@@ -3,7 +3,7 @@
 // every Wakil message passes before it is sent (the backend runs the same checks).
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { NegMessage, Side } from "./types";
+import type { NegMessage, Side, Terms } from "./types";
 
 /** Steps: 0 ready → 1..n messages → n+1 deal found → n+2 approval sheet. */
 export function useNegotiationReplay(messages: NegMessage[], intervalMs = 1500, autoStart = true) {
@@ -71,6 +71,28 @@ export function lastPrice(visible: NegMessage[], side: Side): number | undefined
 }
 
 export const rm = (v: number) => "RM" + v.toFixed(2);
+
+/** A weekly total: whole ringgit when it is round (RM610), sen otherwise (RM617.50). */
+export const rmTotal = (v: number) => "RM" + (Number.isInteger(v) ? String(v) : v.toFixed(2));
+
+/** A signed per-kg difference, e.g. "−RM0.60" or "+RM0.10". */
+export const rmDiff = (v: number) => (v < 0 ? "−" : "+") + rm(Math.abs(v));
+
+/** "Mon and Thu", or "Mon, Wed and Fri". */
+export const dayList = (days: string[]) => (days.length > 1 ? `${days.slice(0, -1).join(", ")} and ${days[days.length - 1]}` : days.join(""));
+
+/** One line describing the pinned terms, e.g. "RM12.20/kg · 50 kg Mon and Thu before 9am · ...". */
+export function termsLine(t: Terms, { price = true } = {}) {
+  return [
+    price ? `${rm(t.pricePerKg)}/kg` : null,
+    `${t.qtyKgWeekly} kg ${dayList(t.days)} before ${t.before}`,
+    t.deliveryRule.charAt(0).toLowerCase() + t.deliveryRule.slice(1),
+    `${t.paymentDays}-day terms`,
+    t.trialWeeks ? `${t.trialWeeks}-week trial` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
 
 // ---------- Rule checks (run before any Wakil message leaves its side) ----------
 

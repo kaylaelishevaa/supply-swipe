@@ -5,6 +5,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import * as api from "@/lib/api";
+import { useApi } from "@/lib/useApi";
+import { rm } from "@/lib/negotiation";
 import { Screen } from "@/components/Screen";
 import { StatusBar } from "@/components/StatusBar";
 import { StepBar } from "@/components/StepBar";
@@ -24,6 +26,7 @@ const STYLE_LABEL: Record<Style, string> = { firm: "Firm", balanced: "Balanced",
 export default function LimitsPage() {
   const router = useRouter();
   const [style, setStyle] = useState<Style>("balanced");
+  const max = useApi(() => api.getOwnLimit("buyer"), []);
 
   const save = async () => {
     await api.log(
@@ -62,7 +65,7 @@ export default function LimitsPage() {
                 RM13.00<span className="text-[11px] font-normal text-muted"> /kg</span>
               </div>
             </div>
-            <LockCard label="Maximum · sealed" value="RM12.50" />
+            <LockCard label="Maximum · sealed" value={max != null ? rm(max) : ""} />
           </div>
           <SealedNote who="supplier" />
           <div className="h-px bg-line" />

@@ -47,6 +47,7 @@ export const PUBLIC = {
   supplierListPerKg: 12.8,
   marketPerKg: 12.1, // PriceCatcher
   moqKg: 30,
+  lastWeekPerKg: 12.8, // what Mak Ngah paid last week, before SupplySwipe
 };
 
 export const NEGOTIATION_ID = "n-0142";

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as api from "@/lib/api";
 import { useApi } from "@/lib/useApi";
+import { rmDiff, rmTotal, termsLine } from "@/lib/negotiation";
 import type { Deal } from "@/lib/types";
 import { Screen } from "./Screen";
 import { StatusBar } from "./StatusBar";
@@ -18,8 +19,6 @@ import { ChevronLeft } from "./Icons";
 import { RejectForm } from "./RejectForm";
 import { RejectedNote, SealedLink, WaitingForOther } from "./ApprovalStates";
 
-const signed = (v: number) => (v < 0 ? "−" : "+") + "RM" + Math.abs(v).toFixed(2);
-
 export function ApprovalInbox({ deal }: { deal: Deal }) {
   const router = useRouter();
   const [rejecting, setRejecting] = useState(false);
@@ -29,6 +28,8 @@ export function ApprovalInbox({ deal }: { deal: Deal }) {
   const mine = deal.approvals.some((a) => a.side === "supplier");
   const open = deal.status !== "sealed" && deal.status !== "rejected" && !mine;
   const price = deal.terms.pricePerKg;
+  const listPrice = api.publicNumbers().supplierListPerKg;
+  const repLimit = api.approvalLimit("supplier", "staff");
 
   const approve = async () => {
     const r = await api.approve(deal.id, "supplier", "owner");
@@ -63,23 +64,24 @@ export function ApprovalInbox({ deal }: { deal: Deal }) {
             <div className="flex-1">
               <div className="text-[14px] font-semibold">Restoran Mak Ngah</div>
               <div className="text-[11px] text-muted">
-                {buyerApproval ? `Owner approved ${buyerApproval.at}` : "Owner not approved yet"} · above rep limit RM300
+                {buyerApproval ? `Owner approved ${buyerApproval.at}` : "Owner not approved yet"} ·{" "}
+                {deal.terms.weeklyTotal > repLimit ? "above" : "within"} rep limit RM{repLimit}
               </div>
             </div>
           </div>
-          <div className="text-[13px] leading-[1.5]">Chicken breast · RM12.20/kg · 50 kg Mon and Thu · free delivery · 7-day terms · 2-week trial</div>
+          <div className="text-[13px] leading-[1.5]">Chicken breast · {termsLine(deal.terms)}</div>
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-[12px] border border-line p-2.5">
               <div className="text-[11px] text-muted">vs floor</div>
-              <div className="mt-0.5 text-[15px] font-semibold text-teal-text">{floor != null ? signed(price - floor) : ""}</div>
+              <div className="mt-0.5 text-[15px] font-semibold text-teal-text">{floor != null ? rmDiff(price - floor) : ""}</div>
             </div>
             <div className="rounded-[12px] border border-line p-2.5">
               <div className="text-[11px] text-muted">vs list</div>
-              <div className="mt-0.5 text-[15px] font-semibold">−RM0.60</div>
+              <div className="mt-0.5 text-[15px] font-semibold">{rmDiff(price - listPrice)}</div>
             </div>
             <div className="rounded-[12px] border border-line p-2.5">
               <div className="text-[11px] text-muted">Weekly</div>
-              <div className="mt-0.5 text-[15px] font-semibold">RM{deal.terms.weeklyTotal}</div>
+              <div className="mt-0.5 text-[15px] font-semibold">{rmTotal(deal.terms.weeklyTotal)}</div>
             </div>
           </div>
           <div className="rounded-[10px] bg-purple-soft px-3 py-2.5 text-[12px] leading-[1.45]">

@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import * as api from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { useDemo } from "@/lib/demo-context";
-import { NEGOTIATION_ID } from "@/lib/mock";
+import { rm, rmTotal, dayList } from "@/lib/negotiation";
 import { Screen } from "@/components/Screen";
 import { StatusBar } from "@/components/StatusBar";
 import { Wakil } from "@/components/Wakil";
@@ -17,12 +17,23 @@ import { ChevronLeft, LockIcon, XIcon } from "@/components/Icons";
 import type { WakilPose } from "@/components/WakilAvatar";
 
 const IDEAS = ["Try RM12.00", "Ask for 14-day terms", "Commit 8 weeks", "Deliver by 8am"];
-const SEGS = ["#6A5CF0", "#0E8A76", "#6A5CF0", "#0E8A76", "#6A5CF0", "#0E8A76", "#C9C3F2", "#C9C3F2", "#C9C3F2", "#C9C3F2"];
+/** A counter lets the Wakil send at most this many more messages, within the negotiation's limit. */
+const COUNTER_MESSAGES = 4;
 
 export default function CounterPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { side, role } = useDemo();
   const own = useApi(() => api.getOwnLimit(side), [side]);
+  const deal = useApi(() => api.getDeal(params.id), [params.id]);
+  const view = useApi(() => (deal ? api.getNegotiation(deal.negotiationId, side) : Promise.resolve(undefined)), [deal?.negotiationId, side]);
+  const used = view?.messages.length ?? 0;
+  const more = view ? Math.min(COUNTER_MESSAGES, view.maxMessages - used) : COUNTER_MESSAGES;
+  // Used messages in their side's colour, the counter's extra messages in light purple, the rest empty.
+  const segs = view
+    ? Array.from({ length: view.maxMessages }, (_, i) =>
+        i < used ? (view.messages[i].side === "buyer" ? "#6A5CF0" : "#0E8A76") : i < used + more ? "#C9C3F2" : "#E4E2EF",
+      )
+    : [];
   const [text, setText] = useState("Try RM12.00 if we commit for 8 weeks");
   const [sent, setSent] = useState(false);
   const [pose, setPose] = useState<WakilPose>("idle");
@@ -92,12 +103,14 @@ export default function CounterPage({ params }: { params: { id: string } }) {
         </button>
         <div className="text-right">
           <div className="text-[11px] font-semibold text-amber-text">Deal waiting for you</div>
-          <div className="text-[13px] font-extrabold">RM610/wk</div>
+          <div className="text-[13px] font-extrabold">{deal ? `${rmTotal(deal.terms.weeklyTotal)}/wk` : ""}</div>
         </div>
       </div>
 
       <div className="px-4 pt-2">
-        <div className="text-[12px] text-muted">RM12.20/kg · 50 kg Mon and Thu · 7-day terms</div>
+        <div className="text-[12px] text-muted">
+          {deal ? `${rm(deal.terms.pricePerKg)}/kg · ${deal.terms.qtyKgWeekly} kg ${dayList(deal.terms.days)} · ${deal.terms.paymentDays}-day terms` : ""}
+        </div>
       </div>
 
       <div
@@ -173,10 +186,10 @@ export default function CounterPage({ params }: { params: { id: string } }) {
         <div className="flex flex-col gap-2 rounded-[22px] bg-white px-3.5 py-3 shadow-card">
           <div className="flex justify-between text-[12px]">
             <span className="text-muted">Messages left</span>
-            <span className="font-semibold">up to 4 more</span>
+            <span className="font-semibold">up to {more} more</span>
           </div>
-          <div className="grid grid-cols-10 gap-[3px]">
-            {SEGS.map((c, i) => (
+          <div className="grid gap-[3px]" style={{ gridTemplateColumns: `repeat(${segs.length || 10}, 1fr)` }}>
+            {segs.map((c, i) => (
               <span key={i} className="h-[5px] rounded-[3px]" style={{ background: c }} />
             ))}
           </div>
@@ -192,7 +205,7 @@ export default function CounterPage({ params }: { params: { id: string } }) {
           {sent ? "Sent · Wakil is negotiating" : "Send to Wakil"}
         </Button>
         {sent ? (
-          <Link href={`/negotiation/${NEGOTIATION_ID}`} className="text-center text-[12px] font-semibold text-purple-text">
+          <Link href={`/negotiation/${deal?.negotiationId ?? ""}`} className="text-center text-[12px] font-semibold text-purple-text">
             Back to the negotiation
           </Link>
         ) : (

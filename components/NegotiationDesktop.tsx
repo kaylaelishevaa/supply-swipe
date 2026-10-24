@@ -5,8 +5,8 @@
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import type { NegotiationView, Side } from "@/lib/types";
-import { lastPrice, useNegotiationReplay } from "@/lib/negotiation";
+import type { Deal, NegotiationView, Side } from "@/lib/types";
+import { lastPrice, rmTotal, termsLine, useNegotiationReplay } from "@/lib/negotiation";
 import { MessageBar } from "./MessageBar";
 import { PriceRail } from "./PriceRail";
 import { ConvergenceChart } from "./ConvergenceChart";
@@ -18,7 +18,7 @@ import { RoleSwitcher } from "./RoleSwitcher";
 const NAME: Record<Side, string> = { buyer: "Wakil Mak Ngah", supplier: "Wakil Ayam Segar" };
 const DOT: Record<Side, string> = { buyer: "#6A5CF0", supplier: "#0E8A76" };
 
-export function NegotiationDesktop({ view }: { view: NegotiationView }) {
+export function NegotiationDesktop({ view, deal }: { view: NegotiationView; deal?: Deal }) {
   const router = useRouter();
   const r = useNegotiationReplay(view.messages, 1500);
   const listRef = useRef<HTMLDivElement>(null);
@@ -159,10 +159,10 @@ export function NegotiationDesktop({ view }: { view: NegotiationView }) {
           >
             <div className="text-[12px] font-semibold text-amber-text">{r.dealFound ? "Deal found · sending to both owners" : "Negotiating · limits sealed on both sides"}</div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-[32px] font-semibold tracking-[-0.02em]">RM610</span>
+              <span className="text-[32px] font-semibold tracking-[-0.02em]">{deal ? rmTotal(deal.terms.weeklyTotal) : ""}</span>
               <span className="text-[13px] text-muted">per week</span>
             </div>
-            <div className="text-[12px] text-muted">RM12.20/kg · free delivery above 40 kg · 7-day terms · 2-week trial</div>
+            <div className="text-[12px] text-muted">{deal ? termsLine(deal.terms) : ""}</div>
             <div className="mt-1 grid grid-cols-2 gap-2">
               <Button variant={r.dealFound ? "approve" : "disabled"} height={46} onClick={() => router.push(`/approve/${view.dealId}`)}>
                 Approve

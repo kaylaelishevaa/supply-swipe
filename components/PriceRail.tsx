@@ -70,9 +70,9 @@ export function PriceRail({
       {/* Deal pill */}
       <div
         className="absolute top-0 flex -translate-x-1/2 items-center whitespace-nowrap rounded-full bg-ink font-semibold text-white"
-        style={{ left: railPct(dealPrice ?? 12.2, s), height: d ? 22 : 20, padding: d ? "0 10px" : "0 8px", fontSize: d ? 12 : 11, opacity: met ? 1 : 0, transition: "opacity .4s" }}
+        style={{ left: railPct(dealPrice ?? view.marketPerKg, s), height: d ? 22 : 20, padding: d ? "0 10px" : "0 8px", fontSize: d ? 12 : 11, opacity: met ? 1 : 0, transition: "opacity .4s" }}
       >
-        deal {rm(dealPrice ?? 12.2)}
+        {dealPrice != null ? `deal ${rm(dealPrice)}` : ""}
       </div>
     </div>
   );

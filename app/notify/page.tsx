@@ -4,12 +4,16 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useRouter } from "next/navigation";
+import * as api from "@/lib/api";
+import { useApi } from "@/lib/useApi";
 import { useDemo } from "@/lib/demo-context";
 import { DEAL_ID } from "@/lib/mock";
+import { rm, rmTotal } from "@/lib/negotiation";
 
 export default function NotifyPage() {
   const router = useRouter();
   const { setSide, setRole } = useDemo();
+  const deal = useApi(() => api.getDeal(DEAL_ID), []);
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden bg-[#DCD9F0] text-ink tabular-nums">
       <div className="absolute left-[-120px] top-[420px] h-[520px] w-[520px] rounded-full bg-[#C9C3F2] opacity-70" />
@@ -38,7 +42,8 @@ export default function NotifyPage() {
             <div className="flex-1">
               <div className="text-[15px] font-extrabold tracking-[-0.01em]">Wakil Mak Ngah found a deal</div>
               <div className="mt-0.5 text-[14px] leading-[1.4]">
-                Ayam Segar · chicken breast RM12.20/kg · <span className="font-semibold">RM610 per week</span>. Tap to approve or counter.
+                Ayam Segar · chicken breast {deal ? `${rm(deal.terms.pricePerKg)}/kg` : ""} ·{" "}
+                <span className="font-semibold">{deal ? `${rmTotal(deal.terms.weeklyTotal)} per week` : ""}</span>. Tap to approve or counter.
               </div>
             </div>
             <img src="/logos/ayam-segar.png" alt="Ayam Segar" className="h-11 w-11 flex-none object-contain" />

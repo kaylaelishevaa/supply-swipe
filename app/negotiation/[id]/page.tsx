@@ -9,8 +9,8 @@ import { useEffect, useRef, useState } from "react";
 import * as api from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { useDemo } from "@/lib/demo-context";
-import { lastPrice, useNegotiationReplay } from "@/lib/negotiation";
-import type { NegotiationView } from "@/lib/types";
+import { lastPrice, rm, rmTotal, useNegotiationReplay } from "@/lib/negotiation";
+import type { Deal, NegotiationView } from "@/lib/types";
 import { Screen } from "@/components/Screen";
 import { StatusBar } from "@/components/StatusBar";
 import { ChevronLeft, LockIcon } from "@/components/Icons";
@@ -26,12 +26,13 @@ import { NegotiationDesktop } from "@/components/NegotiationDesktop";
 export default function NegotiationPage({ params }: { params: { id: string } }) {
   const { side } = useDemo();
   const view = useApi(() => api.getNegotiation(params.id, side), [params.id, side]);
+  const deal = useApi(() => (view ? api.getDeal(view.dealId) : Promise.resolve(undefined)), [view?.dealId]);
   const desktop = useSearchParams().get("view") === "desktop";
   if (!view) return <Screen>{null}</Screen>;
-  return desktop ? <NegotiationDesktop view={view} /> : <NegotiationMobile view={view} />;
+  return desktop ? <NegotiationDesktop view={view} deal={deal} /> : <NegotiationMobile view={view} deal={deal} />;
 }
 
-function NegotiationMobile({ view }: { view: NegotiationView }) {
+function NegotiationMobile({ view, deal }: { view: NegotiationView; deal?: Deal }) {
   const router = useRouter();
   const r = useNegotiationReplay(view.messages, 1500);
   const [tab, setTab] = useState<"chat" | "chart">("chat");
@@ -214,8 +215,10 @@ function NegotiationMobile({ view }: { view: NegotiationView }) {
         <div className="h-1 w-9 self-center rounded-[2px] bg-line" />
         <div className="text-[12px] font-semibold text-amber-text">Deal found · waiting for both owners</div>
         <div className="flex items-baseline gap-1.5">
-          <span className="text-[28px] font-extrabold tracking-[-0.02em]">RM610</span>
-          <span className="text-[13px] text-muted">per week · RM12.20/kg · 7-day terms</span>
+          <span className="text-[28px] font-extrabold tracking-[-0.02em]">{deal ? rmTotal(deal.terms.weeklyTotal) : ""}</span>
+          <span className="text-[13px] text-muted">
+            {deal ? `per week · ${rm(deal.terms.pricePerKg)}/kg · ${deal.terms.paymentDays}-day terms` : ""}
+          </span>
         </div>
         <div className="grid grid-cols-[2fr_1fr] gap-2">
           <Button variant="approve" height={48} fontSize={15} onClick={() => router.push(`/approve/${view.dealId}`)}>

@@ -6,6 +6,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as api from "@/lib/api";
+import { useApi } from "@/lib/useApi";
+import { rm } from "@/lib/negotiation";
 import { Screen } from "@/components/Screen";
 import { StatusBar } from "@/components/StatusBar";
 import { Field, FieldLabel } from "@/components/Field";
@@ -17,6 +19,7 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export default function NewRequestPage() {
   const router = useRouter();
   const [days, setDays] = useState<string[]>(["Mon", "Thu"]);
+  const max = useApi(() => api.getOwnLimit("buyer"), []);
   const toggle = (d: string) => setDays((s) => (s.includes(d) ? s.filter((x) => x !== d) : [...s, d]));
 
   const post = async () => {
@@ -76,7 +79,8 @@ export default function NewRequestPage() {
             </FieldLabel>
             <div className="flex h-14 flex-col justify-center rounded-[12px] bg-purple-soft px-3.5">
               <div className="text-[16px] font-semibold text-purple-text">
-                RM12.50<span className="text-[11px] font-normal"> /kg</span>
+                {max != null ? rm(max) : ""}
+                <span className="text-[11px] font-normal"> /kg</span>
               </div>
               <div className="text-[10px] text-purple-text">from your Wakil limits</div>
             </div>

@@ -4,6 +4,7 @@
 
 import type { ReactNode } from "react";
 import type { Deal } from "@/lib/types";
+import { rmTotal } from "@/lib/negotiation";
 
 export function PinnedTerms({ deal, actions }: { deal: Deal; actions?: ReactNode }) {
   const t = deal.terms;
@@ -22,7 +23,7 @@ export function PinnedTerms({ deal, actions }: { deal: Deal; actions?: ReactNode
       </div>
       <div className="flex items-baseline gap-1.5">
         <span className="text-[24px] font-semibold">RM{t.pricePerKg.toFixed(2)}/kg</span>
-        <span className="text-[13px] text-muted">· RM{t.weeklyTotal} per week</span>
+        <span className="text-[13px] text-muted">· {rmTotal(t.weeklyTotal)} per week</span>
       </div>
       <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[12px] text-muted">
         <span>{t.qtyKgWeekly} kg weekly</span>

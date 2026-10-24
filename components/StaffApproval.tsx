@@ -5,6 +5,8 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as api from "@/lib/api";
+import { useApi } from "@/lib/useApi";
+import { rmTotal } from "@/lib/negotiation";
 import type { Deal, Side } from "@/lib/types";
 import { Screen } from "./Screen";
 import { StatusBar } from "./StatusBar";
@@ -46,6 +48,7 @@ export function StaffApproval({ deal, side }: { deal: Deal; side: Side }) {
   const above = amount > limit;
   const approvedHere = deal.approvals.some((a) => a.side === side);
   const sent = !!deal.askedOwnerAt;
+  const view = useApi(() => api.getNegotiation(deal.negotiationId, side), [deal.negotiationId, side]);
 
   // Drag down to dismiss support
   const [dragY, setDragY] = useState(0);
@@ -156,11 +159,14 @@ export function StaffApproval({ deal, side }: { deal: Deal; side: Side }) {
           <BusinessLogo src={c.logo} name={c.them} size={44} />
           <div className="flex-1">
             <div className="text-[14px] font-semibold">Deal with {c.them}</div>
-            <div className="text-[11px] text-muted">Found by {c.wakil} · 6 of 10 messages</div>
+            <div className="text-[11px] text-muted">
+              Found by {c.wakil}
+              {view ? ` · ${view.messages.length} of ${view.maxMessages} messages` : ""}
+            </div>
           </div>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-[44px] font-extrabold leading-none tracking-[-0.03em]">RM{amount}</span>
+          <span className="text-[44px] font-extrabold leading-none tracking-[-0.03em]">{rmTotal(amount)}</span>
           <span className="text-[14px] text-muted">per week</span>
         </div>
         <LimitBar limit={limit} amount={amount} />

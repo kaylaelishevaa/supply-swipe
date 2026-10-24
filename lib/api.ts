@@ -22,6 +22,59 @@ const getBackendUrl = () => {
 const BACKEND_URL = typeof window !== "undefined" ? getBackendUrl() : "http://localhost:8000";
 const STORE_KEY = "supplyswipe.store.v2";
 
+// ---------- Backend calls ----------
+
+/** How long one backend call may take before the app falls back to local data. */
+const TIMEOUT_MS = 1500;
+/** Starting a negotiation can run several model calls on the backend, so it may take longer. */
+const NEGOTIATION_TIMEOUT_MS = 60_000;
+/** After a failed call the backend counts as down for this long, so screens stop waiting on it. */
+const RETRY_AFTER_MS = 30_000;
+/** Shared across page loads (the /demo wrapper loads every step as a new page). */
+const DOWN_KEY = "supplyswipe.backendDownUntil";
+
+function backendDown(): boolean {
+  try {
+    return Date.now() < Number(window.localStorage.getItem(DOWN_KEY) || 0);
+  } catch {
+    return false;
+  }
+}
+
+function markBackendDown() {
+  try {
+    window.localStorage.setItem(DOWN_KEY, String(Date.now() + RETRY_AFTER_MS));
+  } catch {
+    // ignore
+  }
+}
+
+/** One backend call. Null means "use local data": the backend is down, slow or unreachable. */
+async function backend(path: string, init?: RequestInit, timeoutMs = TIMEOUT_MS): Promise<Response | null> {
+  if (typeof window === "undefined" || backendDown()) return null;
+  try {
+    return await fetch(`${BACKEND_URL}${path}`, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+  } catch {
+    markBackendDown();
+    return null;
+  }
+}
+
+const send = (method: "POST" | "PUT", path: string, body: unknown = {}, timeoutMs?: number) =>
+  backend(path, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, timeoutMs);
+
+/** Reads JSON from a backend call, or null if there was no usable answer. */
+async function json<T>(res: Response | null): Promise<T | null> {
+  if (!res?.ok) return null;
+  try {
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+// ---------- Local store ----------
+
 interface Store {
   deal: Deal;
   log: LogRow[];
@@ -88,17 +141,8 @@ const nowHHMM = () => {
 // ---------- Activity log (append-only) ----------
 
 export async function log(row: Omit<LogRow, "id" | "at"> & { at?: string }, key?: string): Promise<void> {
-  if (BACKEND_URL) {
-    try {
-      await fetch(`${BACKEND_URL}/log`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...row, key }),
-      });
-    } catch {
-      // ignore network errors, continue to save local
-    }
-  }
+  // Sent in the background: a tap never waits for the backend to store its log row.
+  void send("POST", "/log", { ...row, key });
 
   const s = load();
   if (key && s.logKeys.includes(key)) return;
@@ -109,16 +153,8 @@ export async function log(row: Omit<LogRow, "id" | "at"> & { at?: string }, key?
 
 /** Owners see every row for their side. Staff see only their own rows. */
 export async function getLog(side: Side, role: Role): Promise<LogRow[]> {
-  if (BACKEND_URL) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/log?side=${side}&role=${role}`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {
-      // fallback
-    }
-  }
+  const remote = await json<LogRow[]>(await backend(`/log?side=${side}&role=${role}`));
+  if (remote) return remote;
 
   const rows = load()
     .log.filter((r) => r.side === side || r.side === "both")
@@ -138,33 +174,19 @@ export function me(side: Side) {
   return { ...ME[side], business: BUSINESSES[ME[side].businessId] };
 }
 
+/** Public numbers anyone can see: buyer target, supplier list price, market price, MOQ, last week's price. */
+export function publicNumbers() {
+  return { ...PUBLIC };
+}
+
 /** Rule-based feed (no AI): buyers see suppliers, suppliers see buyer requests. */
 export async function getFeed(side: Side): Promise<Counterpart[]> {
-  if (BACKEND_URL) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/feed?side=${side}`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {
-      // fallback
-    }
-  }
-  return clone(side === "buyer" ? SUPPLIER_CARDS : BUYER_CARDS);
+  const remote = await json<Counterpart[]>(await backend(`/feed?side=${side}`));
+  return remote ?? clone(side === "buyer" ? SUPPLIER_CARDS : BUYER_CARDS);
 }
 
 export async function postRequest(): Promise<void> {
-  if (BACKEND_URL) {
-    try {
-      await fetch(`${BACKEND_URL}/requests`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-    } catch {
-      // fallback
-    }
-  }
+  await send("POST", "/requests");
 
   const s = load();
   s.postedRequest = true;
@@ -178,20 +200,12 @@ export async function postRequest(): Promise<void> {
  * The trigger. Swiping right posts /negotiations. Returns the negotiation id to open.
  */
 export async function startNegotiation(side: Side, counterpartId: string): Promise<{ id: string; noDeal: boolean }> {
-  if (BACKEND_URL) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/negotiations`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ side, counterpartId }),
-      });
-      if (res.ok) {
-        save();
-        return await res.json();
-      }
-    } catch {
-      // fallback
-    }
+  const remote = await json<{ id: string; noDeal: boolean }>(
+    await send("POST", "/negotiations", { side, counterpartId }, NEGOTIATION_TIMEOUT_MS),
+  );
+  if (remote) {
+    save();
+    return remote;
   }
 
   const card = (side === "buyer" ? SUPPLIER_CARDS : BUYER_CARDS).find((c) => c.id === counterpartId);
@@ -205,17 +219,7 @@ export async function startNegotiation(side: Side, counterpartId: string): Promi
 }
 
 export async function skipCard(side: Side, counterpartId: string): Promise<void> {
-  if (BACKEND_URL) {
-    try {
-      await fetch(`${BACKEND_URL}/cards/skip`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ side, counterpartId }),
-      });
-    } catch {
-      // fallback
-    }
-  }
+  await send("POST", "/cards/skip", { side, counterpartId });
 
   const card = (side === "buyer" ? SUPPLIER_CARDS : BUYER_CARDS).find((c) => c.id === counterpartId);
   await log({ side, kind: "human", staffVisible: true, action: `Skipped ${card?.name ?? counterpartId}`, actor: side === "buyer" ? "Aisyah · kitchen lead" : "Sales rep · Ayam Segar", reason: card?.why ?? "" }, `skip:${side}:${counterpartId}`);
@@ -224,16 +228,8 @@ export async function skipCard(side: Side, counterpartId: string): Promise<void>
 // ---------- Negotiation ----------
 
 export async function getNegotiation(id: string, viewer: Side): Promise<NegotiationView> {
-  if (BACKEND_URL) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/negotiations/${id}?viewer=${viewer}`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {
-      // fallback
-    }
-  }
+  const remote = await json<NegotiationView>(await backend(`/negotiations/${id}?viewer=${viewer}`));
+  if (remote) return remote;
 
   const own = SEALED_LIMITS[viewer];
   const band =
@@ -261,17 +257,8 @@ export async function getNegotiation(id: string, viewer: Side): Promise<Negotiat
 // ---------- Deal and approvals ----------
 
 export async function getDeal(id: string): Promise<Deal> {
-  if (BACKEND_URL) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/deals/${id}`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {
-      // fallback
-    }
-  }
-  return clone(load().deal);
+  const remote = await json<Deal>(await backend(`/deals/${id}`));
+  return remote ?? clone(load().deal);
 }
 
 const ownerName = (side: Side) => ME[side].owner;
@@ -287,21 +274,10 @@ export function approvalLimit(side: Side, role: Role): number {
 export type ApproveResult = { ok: true; deal: Deal } | { ok: false; reason: "above_limit" | "already" | "rejected" };
 
 export async function approve(dealId: string, side: Side, role: Role): Promise<ApproveResult> {
-  if (BACKEND_URL) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/deals/${dealId}/approve`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ side, role }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        save();
-        return data;
-      }
-    } catch {
-      // fallback
-    }
+  const remote = await json<ApproveResult>(await send("POST", `/deals/${dealId}/approve`, { side, role }));
+  if (remote) {
+    save();
+    return remote;
   }
 
   const s = load();
@@ -333,21 +309,10 @@ export async function approve(dealId: string, side: Side, role: Role): Promise<A
 }
 
 export async function reject(dealId: string, side: Side, role: Role, reason: string): Promise<void> {
-  if (BACKEND_URL) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/deals/${dealId}/reject`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ side, role, reason }),
-      });
-      // The backend writes its own log row, so stop here to avoid a duplicate.
-      if (res.ok) {
-        save();
-        return;
-      }
-    } catch {
-      // fallback
-    }
+  // The backend writes its own log row, so stop there to avoid a duplicate.
+  if ((await send("POST", `/deals/${dealId}/reject`, { side, role, reason }))?.ok) {
+    save();
+    return;
   }
 
   const s = load();
@@ -356,21 +321,10 @@ export async function reject(dealId: string, side: Side, role: Role, reason: str
 }
 
 export async function askOwner(dealId: string, side: Side): Promise<string> {
-  if (BACKEND_URL) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/deals/${dealId}/ask-owner`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ side, role: "staff" }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        save();
-        return data.at;
-      }
-    } catch {
-      // fallback
-    }
+  const remote = await json<{ at: string }>(await send("POST", `/deals/${dealId}/ask-owner`, { side, role: "staff" }));
+  if (remote) {
+    save();
+    return remote.at;
   }
 
   const s = load();
@@ -381,20 +335,9 @@ export async function askOwner(dealId: string, side: Side): Promise<string> {
 }
 
 export async function undoAskOwner(dealId: string, side: Side): Promise<void> {
-  if (BACKEND_URL) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/deals/${dealId}/undo-ask-owner`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ side, role: "staff" }),
-      });
-      if (res.ok) {
-        save();
-        return;
-      }
-    } catch {
-      // fallback
-    }
+  if ((await send("POST", `/deals/${dealId}/undo-ask-owner`, { side, role: "staff" }))?.ok) {
+    save();
+    return;
   }
 
   const s = load();
@@ -404,21 +347,10 @@ export async function undoAskOwner(dealId: string, side: Side): Promise<void> {
 }
 
 export async function counterViaWakil(dealId: string, side: Side, role: Role, note: string): Promise<void> {
-  if (BACKEND_URL) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/deals/${dealId}/counter`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ side, role, note }),
-      });
-      // The backend writes both log rows, so stop here to avoid duplicates.
-      if (res.ok) {
-        save();
-        return;
-      }
-    } catch {
-      // fallback
-    }
+  // The backend writes both log rows, so stop there to avoid duplicates.
+  if ((await send("POST", `/deals/${dealId}/counter`, { side, role, note }))?.ok) {
+    save();
+    return;
   }
 
   await log({ side, kind: "human", staffVisible: role === "staff", action: "Sent a counter note to Wakil", actor: actorLabel(side, role), reason: note.slice(0, 80) });
@@ -428,44 +360,19 @@ export async function counterViaWakil(dealId: string, side: Side, role: Role, no
 // ---------- Wakil profile ----------
 
 export async function getWakil(side: Side): Promise<WakilProfile> {
-  if (BACKEND_URL) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/wakil/${side}`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {
-      // fallback
-    }
-  }
-  return clone(load().wakil[side]);
+  const remote = await json<WakilProfile>(await backend(`/wakil/${side}`));
+  return remote ?? clone(load().wakil[side]);
 }
 
 export async function saveWakil(side: Side, cfg: WakilProfile): Promise<void> {
-  if (BACKEND_URL) {
-    try {
-      await fetch(`${BACKEND_URL}/wakil/${side}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cfg),
-      });
-    } catch {
-      // fallback
-    }
-  }
+  await send("PUT", `/wakil/${side}`, cfg);
 
   load().wakil[side] = clone(cfg);
   save();
 }
 
 export async function resetDemo(): Promise<void> {
-  if (BACKEND_URL) {
-    try {
-      await fetch(`${BACKEND_URL}/demo/reset`, { method: "POST" });
-    } catch {
-      // fallback
-    }
-  }
+  await send("POST", "/demo/reset");
 
   store = fresh();
   save();
@@ -474,15 +381,6 @@ export async function resetDemo(): Promise<void> {
 // ---------- Own sealed limit ----------
 
 export async function getOwnLimit(side: Side): Promise<number> {
-  if (BACKEND_URL) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/limits/own?side=${side}`);
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {
-      // fallback
-    }
-  }
-  return SEALED_LIMITS[side];
+  const remote = await json<number>(await backend(`/limits/own?side=${side}`));
+  return remote ?? SEALED_LIMITS[side];
 }
