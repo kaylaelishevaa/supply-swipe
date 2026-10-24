@@ -1,0 +1,28 @@
+kind = "slides"
+previewPath = "/supplyswipe-pitch-deck/"
+title = "SupplySwipe Pitch Deck"
+description = "A stakeholder and demo pitch deck presenting SupplySwipe’s local procurement prototype, buyer and supplier workflows, Wakil negotiation, owner approvals, invoice checks, audit history, attributed market context, and clearly labeled Phase 2 targets."
+version = "1.0.0"
+id = "artifacts/supplyswipe-pitch-deck"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/supplyswipe-pitch-deck/" ]
+localPort = 19194
+
+[services.development]
+run = "pnpm --filter @workspace/supplyswipe-pitch-deck run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/supplyswipe-pitch-deck", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/supplyswipe-pitch-deck/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19194"
+BASE_PATH = "/supplyswipe-pitch-deck/"

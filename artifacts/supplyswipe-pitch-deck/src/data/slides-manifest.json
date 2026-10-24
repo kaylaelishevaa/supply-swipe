@@ -1,0 +1,82 @@
+[
+  {
+    "id": "a4816ea0-2f7b-4cf1-9a24-067bde19bb01",
+    "position": 1,
+    "filepath": "src/pages/slides/SupplySwipe.tsx",
+    "title": "SupplySwipe",
+    "description": "Bounded negotiation for weekly food supply deals.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a4816ea0-2f7b-4cf1-9a24-067bde19bb02",
+    "position": 2,
+    "filepath": "src/pages/slides/MarketNumbers.tsx",
+    "title": "The pressure shows up in the numbers",
+    "description": "Attributed market context from the PRD.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a4816ea0-2f7b-4cf1-9a24-067bde19bb03",
+    "position": 3,
+    "filepath": "src/pages/slides/NegotiationProblem.tsx",
+    "title": "The costly loop is negotiation and memory",
+    "description": "Why weekly food procurement gets repetitive.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a4816ea0-2f7b-4cf1-9a24-067bde19bb04",
+    "position": 4,
+    "filepath": "src/pages/slides/TwoSidedWorkflow.tsx",
+    "title": "One workflow for buyers and suppliers",
+    "description": "Buyer and supplier steps in the local prototype.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a4816ea0-2f7b-4cf1-9a24-067bde19bb05",
+    "position": 5,
+    "filepath": "src/pages/slides/BoundedWakils.tsx",
+    "title": "Wakils negotiate within private limits",
+    "description": "Rule-based prototype negotiations stay within limits.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a4816ea0-2f7b-4cf1-9a24-067bde19bb06",
+    "position": 6,
+    "filepath": "src/pages/slides/OwnerApproval.tsx",
+    "title": "Owners approve every proposed deal",
+    "description": "Human review and dual owner approval.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a4816ea0-2f7b-4cf1-9a24-067bde19bb07",
+    "position": 7,
+    "filepath": "src/pages/slides/InvoiceCheck.tsx",
+    "title": "Pin the agreement. Check the invoice.",
+    "description": "Sample invoice comparisons against pinned terms.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a4816ea0-2f7b-4cf1-9a24-067bde19bb08",
+    "position": 8,
+    "filepath": "src/pages/slides/AuditHistory.tsx",
+    "title": "Keep an audit trail and deal history",
+    "description": "Role-aware activity history and supplier context.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a4816ea0-2f7b-4cf1-9a24-067bde19bb09",
+    "position": 9,
+    "filepath": "src/pages/slides/PrototypeToday.tsx",
+    "title": "What works today—and what is optional",
+    "description": "Local prototype today and future integrations, clearly separated.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a4816ea0-2f7b-4cf1-9a24-067bde19bb10",
+    "position": 10,
+    "filepath": "src/pages/slides/PhaseTwo.tsx",
+    "title": "Next: validate the value with food businesses",
+    "description": "PRD Phase 2 targets, explicitly not achieved results.",
+    "speakerNotes": ""
+  }
+]
