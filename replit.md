@@ -1,45 +1,25 @@
-# [Project name]
+# SupplySwipe
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Procurement prototype for food businesses: buyer and supplier Wakil agents negotiate weekly supply deals, and both owners approve before a deal is sealed.
 
-## Run & Operate
+## Run and verify
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Web workflow: `artifacts/supplyswipe: web`.
+- API scaffold workflow: `artifacts/api-server: API Server`.
+- `pnpm --filter @workspace/supplyswipe run typecheck`
+- `pnpm run test:e2e` — Playwright route coverage and negotiation/approval journey. Requires the web workflow running.
+- The frontend uses Vite, React, wouter and the original Tailwind 3 configuration.
 
-## Stack
+## Imported app behavior
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+The imported Vercel frontend works independently using its existing localStorage store, seeded businesses and rule-based negotiation engine. This remains a synthetic-data prototype, not a production authenticated procurement service.
 
-## Where things live
+The optional original Python FastAPI/Supabase backend remains in `.migration-backup/backend/`; it is not the Express scaffold and is not running. No database was migrated or replaced. Set `VITE_API_URL` to a separately hosted original backend only when needed. With no configured backend, the app uses its original persistent local demo without making requests to an unexposed port.
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+## Routing and assets
 
-## Architecture decisions
+All original page paths are preserved, including `/demo`, dynamic negotiation/deal routes and `?view=desktop`. Pages live under `artifacts/supplyswipe/src/app`; `App.tsx` maps them to client routes. Original logos and the Wakil web component are in `public/`. The original 2D avatar fallback remains for devices without WebGL.
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+## Tests
 
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
-
-## User preferences
-
-_Populate as you build — explicit user instructions worth remembering across sessions._
-
-## Gotchas
-
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+Playwright uses `REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE` when available. Browser downloads are not needed in Replit. Test outputs go under ignored `generated-artifacts/`.

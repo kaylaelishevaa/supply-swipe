@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Light mode only (design rule 4). */
+:root {
+  --font-jakarta: "Plus Jakarta Sans";
+  --font-mono: "JetBrains Mono";
+}
+
+html,
+body {
+  background: #efeef6;
+  color: #1d1b2e;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Hide scrollbars inside the phone frame; content still scrolls. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@layer utilities {
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}
