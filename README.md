@@ -23,7 +23,7 @@ SupplySwipe is an Orbyte procurement prototype for small F&B businesses. It uses
 | Live Demo Link | [Open the published app](https://supply-swipe--shariqnaumann.replit.app/) |
 | Guided demo | [Open the 20-step demo](https://supply-swipe--shariqnaumann.replit.app/demo) |
 | Pitch Deck | [Open the SupplySwipe pitch deck](https://supply-swipe--shariqnaumann.replit.app/supplyswipe-pitch-deck/) |
-| Pitch/Demo Video | **URL pending.** Add the public YouTube or video link here when one is available. |
+| Pitch/Demo Video | https://youtu.be/N1S1TWdS2Eg |
 | Public Replit deployment URL | [supply-swipe--shariqnaumann.replit.app](https://supply-swipe--shariqnaumann.replit.app/) |
 
 ## What it does
