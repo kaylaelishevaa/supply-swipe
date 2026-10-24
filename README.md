@@ -8,7 +8,7 @@ SupplySwipe is an Orbyte procurement prototype for small F&B businesses. It uses
 
 | Field | Details |
 | --- | --- |
-| **Team name** | SupplySwipe |
+| **Team name** | NylonDaBest |
 | **Team domain** | Domain 2 — Orbyte Smart SME Challenge: Less Busywork, Better Business |
 | **SDG track** | SDG 8 — Decent Work and Economic Growth (primary); SDG 12 — Responsible Consumption and Production (secondary) |
 | **Team leader** | Kayla Elisheva Siwi |
@@ -20,10 +20,10 @@ SupplySwipe is an Orbyte procurement prototype for small F&B businesses. It uses
 | Resource | Link |
 | --- | --- |
 | GitHub repository | [kaylaelishevaa/supply-swipe](https://github.com/kaylaelishevaa/supply-swipe) |
-| SupplySwipe app | [Open the published app](https://supply-swipe--shariqnaumann.replit.app/) |
+| Live Demo Link | [Open the published app](https://supply-swipe--shariqnaumann.replit.app/) |
 | Guided demo | [Open the 20-step demo](https://supply-swipe--shariqnaumann.replit.app/demo) |
-| Pitch deck | [Open the SupplySwipe pitch deck](https://supply-swipe--shariqnaumann.replit.app/supplyswipe-pitch-deck/) |
-| Pitch/demo video | **URL pending.** Add the public YouTube or video link here when one is available. |
+| Pitch Deck | [Open the SupplySwipe pitch deck](https://supply-swipe--shariqnaumann.replit.app/supplyswipe-pitch-deck/) |
+| Pitch/Demo Video | **URL pending.** Add the public YouTube or video link here when one is available. |
 | Public Replit deployment URL | [supply-swipe--shariqnaumann.replit.app](https://supply-swipe--shariqnaumann.replit.app/) |
 
 ## What it does
