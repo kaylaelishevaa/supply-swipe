@@ -40,13 +40,13 @@ export default function NotifyPage() {
           </div>
           <div className="flex items-start gap-3">
             <div className="flex-1">
-              <div className="text-[15px] font-extrabold tracking-[-0.01em]">Wakil Mak Ngah found a deal</div>
+              <div className="text-[15px] font-extrabold tracking-[-0.01em]">{deal ? `${api.wakilName(deal.buyerId)} found a deal` : ""}</div>
               <div className="mt-0.5 text-[14px] leading-[1.4]">
-                Ayam Segar · chicken breast {deal ? `${rm(deal.terms.pricePerKg)}/kg` : ""} ·{" "}
+                {deal ? api.parties(deal).supplier.short : ""} · chicken breast {deal ? `${rm(deal.terms.pricePerKg)}/kg` : ""} ·{" "}
                 <span className="font-semibold">{deal ? `${rmTotal(deal.terms.weeklyTotal)} per week` : ""}</span>. Tap to approve or counter.
               </div>
             </div>
-            <img src="/logos/ayam-segar.png" alt="Ayam Segar" className="h-11 w-11 flex-none object-contain" />
+            {deal && <img src={api.parties(deal).supplier.logo} alt={api.parties(deal).supplier.short} className="h-11 w-11 flex-none object-contain" />}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button

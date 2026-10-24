@@ -6,6 +6,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as api from "@/lib/api";
+import { MAX_MESSAGES } from "@/lib/mock";
 import type { Counterpart, Side } from "@/lib/types";
 import { Chip } from "./Chip";
 import { FitTiles } from "./FitTiles";
@@ -31,7 +32,7 @@ export function SwipeDeck3D({ side, cards, ownLimit }: { side: Side; cards: Coun
   const router = useRouter();
   const n = cards.length;
   const [s, setS] = useState<DeckState>({ i: 0, dx: 0, dy: 0, drag: false, snap: false, out: null, flip: false });
-  const [match, setMatch] = useState<{ name: string; href: string } | null>(null);
+  const [match, setMatch] = useState<{ name: string; logo: string; href: string } | null>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
   const lastDx = useRef(0); // latest drag offset, read on release (state may not have re-rendered yet)
   const flying = useRef(false);
@@ -52,7 +53,7 @@ export function SwipeDeck3D({ side, cards, ownLimit }: { side: Side; cards: Coun
       setTimeout(() => setS((p) => ({ ...p, snap: false })), 60);
       flying.current = false;
       const res = await call;
-      if (res) setMatch({ name: card.name, href: res.noDeal ? `/no-deal/${res.id}` : `/negotiation/${res.id}` });
+      if (res) setMatch({ name: card.name, logo: card.logo, href: res.noDeal ? `/no-deal/${res.id}` : `/negotiation/${res.id}` });
     }, 340);
   }
 
@@ -234,7 +235,7 @@ export function SwipeDeck3D({ side, cards, ownLimit }: { side: Side; cards: Coun
                   <div className="flex flex-col gap-2 text-[13px] leading-[1.45]">
                     {[
                       side === "buyer" ? "Asks for Mon and Thu before 9am, 7-day terms" : "Offers your PJ route days, RM10 delivery below 40 kg",
-                      "Stops at 10 messages or at your limit",
+                      `Stops at ${MAX_MESSAGES} messages or at your limit`,
                       "Sends you the deal. Nothing is created until you tap Approve.",
                     ].map((t, x) => (
                       <div key={x} className="flex gap-2.5">
@@ -262,7 +263,9 @@ export function SwipeDeck3D({ side, cards, ownLimit }: { side: Side; cards: Coun
         onNego={() => fly(1)}
       />
 
-      {match && <MatchOverlay side={side} counterpartName={match.name} onWatch={() => router.push(match.href)} onClose={() => setMatch(null)} />}
+      {match && (
+        <MatchOverlay side={side} counterpartName={match.name} counterpartLogo={match.logo} onWatch={() => router.push(match.href)} onClose={() => setMatch(null)} />
+      )}
     </>
   );
 }

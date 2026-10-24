@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import * as api from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { useDemo } from "@/lib/demo-context";
-import { LOGO } from "@/lib/mock";
+import type { Deal } from "@/lib/types";
 import { Screen } from "@/components/Screen";
 import { StatusBar } from "@/components/StatusBar";
 import { BusinessLogo } from "@/components/BusinessLogo";
@@ -18,18 +18,27 @@ import { PinnedTerms } from "@/components/PinnedTerms";
 import { ChatThread, type ChatMsg } from "@/components/ChatThread";
 import { Composer } from "@/components/Composer";
 
-const SEED: ChatMsg[] = [
-  { id: "c1", mine: false, text: "Terima kasih boss. First drop Monday 7.30am, driver is Hafiz.", by: "Encik Roslan", at: "10:14" },
-  { id: "c2", mine: true, text: "Ok. Use the back door at the lane, kitchen opens 7am.", by: "Mak Ngah", at: "10:16" },
-  { id: "c3", mine: false, text: "Noted. Invoice will match the pinned terms.", by: "Encik Roslan", at: "10:17" },
-];
+const DAY_NAMES: Record<string, string> = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday" };
+
+/** The first few chat messages after a deal, between the two owners (seen from the buyer's side). */
+function seedChat(deal: Deal): ChatMsg[] {
+  const buyerOwner = api.people(deal, "buyer").owner;
+  const supplierOwner = api.people(deal, "supplier").owner;
+  const firstDay = DAY_NAMES[deal.terms.days[0]] ?? deal.terms.days[0];
+  return [
+    { id: "c1", mine: false, text: `Terima kasih boss. First drop ${firstDay} 7.30am, driver is Hafiz.`, by: supplierOwner, at: "10:14" },
+    { id: "c2", mine: true, text: "Ok. Use the back door at the lane, kitchen opens 7am.", by: buyerOwner, at: "10:16" },
+    { id: "c3", mine: false, text: "Noted. Invoice will match the pinned terms.", by: supplierOwner, at: "10:17" },
+  ];
+}
 
 export default function DealPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { side, role } = useDemo();
   const deal = useApi(() => api.getDeal(params.id), [params.id]);
   // Chat is seen from the buyer's side in the reference; the supplier sees the mirror.
-  const [msgs, setMsgs] = useState<ChatMsg[]>(SEED);
+  const [sent, setSent] = useState<ChatMsg[]>([]);
+  const msgs = deal ? [...seedChat(deal), ...sent] : sent;
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -37,12 +46,14 @@ export default function DealPage({ params }: { params: { id: string } }) {
 
   const buyer = side === "buyer";
   const thread = buyer ? msgs : msgs.map((m) => ({ ...m, mine: !m.mine }));
-  const myName = buyer ? (role === "owner" ? "Mak Ngah" : "Aisyah") : role === "owner" ? "Encik Roslan" : "Sales rep";
+  const me = deal ? api.people(deal, side) : null;
+  const myName = me ? (role === "owner" ? me.owner : me.staff) : "";
+  const them = deal ? api.parties(deal)[buyer ? "supplier" : "buyer"] : null;
 
   const send = (text: string) => {
     const d = new Date();
     const at = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-    setMsgs((m) => [...m, { id: `c${Date.now()}`, mine: buyer, text, by: myName, at }]);
+    setSent((m) => [...m, { id: `c${Date.now()}`, mine: buyer, text, by: myName, at }]);
   };
 
   return (
@@ -56,10 +67,10 @@ export default function DealPage({ params }: { params: { id: string } }) {
         >
           <ChevronLeft size={16} />
         </Link>
-        <BusinessLogo src={buyer ? LOGO.ayamSegar : LOGO.makNgah} name={buyer ? "Ayam Segar Enterprise" : "Restoran Mak Ngah"} size={36} />
+        {them && <BusinessLogo src={them.logo} name={them.name} size={36} />}
         <div className="flex-1">
-          <div className="text-[16px] font-semibold">{buyer ? "Ayam Segar Enterprise" : "Restoran Mak Ngah"}</div>
-          <div className="text-[11px] text-muted">{buyer ? "Encik Roslan · owner" : "Mak Ngah · owner"}</div>
+          <div className="text-[16px] font-semibold">{them?.name}</div>
+          <div className="text-[11px] text-muted">{them ? `${them.owner} · owner` : ""}</div>
         </div>
       </div>
 
@@ -80,7 +91,7 @@ export default function DealPage({ params }: { params: { id: string } }) {
             deal={deal}
             actions={
               <>
-                <Button variant="secondary" height={40} onClick={() => router.push("/history/ayam-segar")}>
+                <Button variant="secondary" height={40} onClick={() => router.push(`/history/${deal.supplierId}`)}>
                   Renegotiate
                 </Button>
                 <Button variant="secondary" height={40} onClick={() => router.push("/log")}>
@@ -108,7 +119,7 @@ export default function DealPage({ params }: { params: { id: string } }) {
         <ChatThread messages={thread} />
       </div>
 
-      <Composer placeholder={buyer ? "Message Ayam Segar" : "Message Mak Ngah"} onSend={send} />
+      <Composer placeholder={them ? `Message ${them.short}` : "Message"} onSend={send} />
     </Screen>
   );
 }

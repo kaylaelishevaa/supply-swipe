@@ -5,8 +5,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { NegMessage, Side, Terms } from "./types";
 
+/** Time between replayed messages. */
+export const REPLAY_MS = 600;
+
 /** Steps: 0 ready → 1..n messages → n+1 deal found → n+2 approval sheet. */
-export function useNegotiationReplay(messages: NegMessage[], intervalMs = 1500, autoStart = true) {
+export function useNegotiationReplay(messages: NegMessage[], intervalMs = REPLAY_MS, autoStart = true) {
   const total = messages.length;
   const last = total + 2;
   const [step, setStep] = useState(autoStart ? 0 : last);
@@ -40,11 +43,21 @@ export function useNegotiationReplay(messages: NegMessage[], intervalMs = 1500, 
     return () => clearInterval(timer.current);
   }, [autoStart, restart, total]);
 
+  /** Jump to the end: every message shown and the approval sheet open. */
+  const skip = useCallback(() => {
+    clearInterval(timer.current);
+    stepRef.current = last;
+    setStep(last);
+    setPop(true);
+  }, [last]);
+
   const shown = Math.min(step, total);
   return {
     step,
     pop,
     restart,
+    skip,
+    done: step >= last,
     shown,
     visible: messages.slice(0, shown),
     dealFound: step >= total + 1,
@@ -78,16 +91,18 @@ export const rmTotal = (v: number) => "RM" + (Number.isInteger(v) ? String(v) : 
 /** A signed per-kg difference, e.g. "−RM0.60" or "+RM0.10". */
 export const rmDiff = (v: number) => (v < 0 ? "−" : "+") + rm(Math.abs(v));
 
-/** "Mon and Thu", or "Mon, Wed and Fri". */
-export const dayList = (days: string[]) => (days.length > 1 ? `${days.slice(0, -1).join(", ")} and ${days[days.length - 1]}` : days.join(""));
+/** "Mon and Thu", "Mon, Wed and Fri", or "Mon–Sat" for every working day. */
+export const dayList = (days: string[]) =>
+  days.length === 6 ? "Mon–Sat" : days.length > 1 ? `${days.slice(0, -1).join(", ")} and ${days[days.length - 1]}` : days.join("");
 
 /** One line describing the pinned terms, e.g. "RM12.20/kg · 50 kg Mon and Thu before 9am · ...". */
 export function termsLine(t: Terms, { price = true } = {}) {
   return [
     price ? `${rm(t.pricePerKg)}/kg` : null,
     `${t.qtyKgWeekly} kg ${dayList(t.days)} before ${t.before}`,
-    t.deliveryRule.charAt(0).toLowerCase() + t.deliveryRule.slice(1),
-    `${t.paymentDays}-day terms`,
+    // "Free delivery…" reads as "free delivery…" mid-line; "RM10 delivery…" stays as it is.
+    /^[A-Z][a-z]/.test(t.deliveryRule) ? t.deliveryRule.charAt(0).toLowerCase() + t.deliveryRule.slice(1) : t.deliveryRule,
+    t.paymentDays === 0 ? "COD" : `${t.paymentDays}-day terms`,
     t.trialWeeks ? `${t.trialWeeks}-week trial` : null,
   ]
     .filter(Boolean)

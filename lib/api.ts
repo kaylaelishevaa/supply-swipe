@@ -3,11 +3,12 @@
 // Python FastAPI + Supabase backend. If offline or if the backend is stopped,
 // it falls back seamlessly to the local store and localStorage.
 
-import type { Deal, LogRow, NegotiationView, Role, Side, WakilProfile, Counterpart } from "./types";
+import type { Business, Deal, LogRow, NegMessage, NegotiationView, Role, Side, WakilProfile, Counterpart } from "./types";
 import {
-  BUSINESSES, BUYER_CARDS, DEAL_ID, DEFAULT_WAKIL, ME, NEGOTIATION_ID, PUBLIC, SEALED_LIMITS, SEALED_TIMES,
-  SUPPLIER_CARDS, TRANSCRIPT, initialDeal, initialLog,
+  BUSINESSES, BUYER_CARDS, BUYER_PROFILES, DEAL_ID, DEFAULT_WAKIL, MAX_MESSAGES, ME, NEGOTIATION_ID, NO_DEAL_ID, PUBLIC,
+  SEALED_TIMES, SUPPLIER_CARDS, SUPPLIER_PROFILES, initialLog,
 } from "./mock";
+import { negotiate, type Outcome } from "./engine";
 
 const getBackendUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes("localhost")) {
@@ -20,16 +21,16 @@ const getBackendUrl = () => {
 };
 
 const BACKEND_URL = typeof window !== "undefined" ? getBackendUrl() : "http://localhost:8000";
-const STORE_KEY = "supplyswipe.store.v2";
+const STORE_KEY = "supplyswipe.store.v3";
 
 // ---------- Backend calls ----------
 
 /** How long one backend call may take before the app falls back to local data. */
-const TIMEOUT_MS = 1500;
+const TIMEOUT_MS = 1000;
 /** Starting a negotiation can run several model calls on the backend, so it may take longer. */
 const NEGOTIATION_TIMEOUT_MS = 60_000;
 /** After a failed call the backend counts as down for this long, so screens stop waiting on it. */
-const RETRY_AFTER_MS = 30_000;
+const RETRY_AFTER_MS = 5 * 60_000;
 /** Shared across page loads (the /demo wrapper loads every step as a new page). */
 const DOWN_KEY = "supplyswipe.backendDownUntil";
 
@@ -75,8 +76,19 @@ async function json<T>(res: Response | null): Promise<T | null> {
 
 // ---------- Local store ----------
 
+/** The latest negotiation the two Wakils ran (one at a time in the demo). */
+interface StoredNegotiation {
+  buyerId: string;
+  supplierId: string;
+  messages: NegMessage[];
+  result: "deal" | "no_deal";
+}
+
 interface Store {
   deal: Deal;
+  negotiation: StoredNegotiation;
+  /** The last swipe that ended before the first message (the floor was above the maximum). */
+  noDeal?: { side: Side; counterpartId: string };
   log: LogRow[];
   /** Idempotency keys for log rows, so repeating a demo step does not duplicate rows. */
   logKeys: string[];
@@ -84,14 +96,71 @@ interface Store {
   postedRequest: boolean;
 }
 
-const fresh = (): Store => ({
-  deal: initialDeal(),
-  log: initialLog(),
-  // The seed already holds Aisyah's post and swipe, so repeating those steps adds no duplicates.
-  logKeys: ["post:chicken", "swipe:buyer:ayam-segar"],
-  wakil: { buyer: { ...DEFAULT_WAKIL.buyer }, supplier: { ...DEFAULT_WAKIL.supplier } },
-  postedRequest: false,
+export const wakilName = (businessId: string) => `Wakil ${BUSINESSES[businessId]?.short ?? businessId}`;
+const pay = (days: number) => (days === 0 ? "COD" : `${days}-day terms`);
+
+/** Runs the rule-based engine for one buyer and supplier. */
+function runEngine(buyerId: string, supplierId: string, startAt: string): Outcome {
+  return negotiate({
+    buyer: BUYER_PROFILES[buyerId],
+    supplier: SUPPLIER_PROFILES[supplierId],
+    buyerShort: BUSINESSES[buyerId].short,
+    marketPerKg: PUBLIC.marketPerKg,
+    maxMessages: MAX_MESSAGES,
+    startAt,
+  });
+}
+
+/** The activity-log rows a negotiation writes: each side's own moves and rule checks, then the result. */
+function negotiationRows(o: Outcome, buyerId: string, supplierId: string): LogRow[] {
+  const id = () => `r${Date.now()}${Math.random().toString(36).slice(2, 7)}`;
+  const party = { buyer: buyerId, supplier: supplierId };
+  const at0 = o.messages[0]?.at ?? "09:04";
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const verb = { offer: "Offered", counter: "Countered", accept: "Accepted" } as Record<string, string>;
+  const rows: LogRow[] = [
+    { id: id(), side: "buyer", kind: "agent", staffVisible: false, action: `Opened negotiation with ${BUSINESSES[supplierId].short}`, actor: `${wakilName(buyerId)} · agent`, reason: "Limits sealed, max not shared", at: at0 },
+    { id: id(), side: "supplier", kind: "agent", staffVisible: false, action: `Joined negotiation with ${BUSINESSES[buyerId].name}`, actor: `${wakilName(supplierId)} · agent`, reason: `${BUYER_PROFILES[buyerId].qtyKg} kg weekly request`, at: at0 },
+  ];
+  for (const m of o.messages) {
+    for (const r of o.rules.filter((r) => r.n === m.n)) {
+      rows.push({ id: id(), side: r.side, kind: "rule", staffVisible: false, action: r.action, actor: "Rule check · system", reason: r.reason, at: m.at });
+    }
+    if (m.pricePerKg == null) continue;
+    rows.push({ id: id(), side: m.side, kind: "agent", staffVisible: false, action: `${verb[m.type]} RM${m.pricePerKg.toFixed(2)}/kg`, actor: `${wakilName(party[m.side])} · agent`, reason: cap(m.why), at: m.at });
+  }
+  const last = o.messages[o.messages.length - 1];
+  rows.push(
+    o.result === "deal"
+      ? { id: id(), side: "both", kind: "agent", staffVisible: false, action: `Deal proposed · ${o.messages.length} of ${MAX_MESSAGES} messages`, actor: `${wakilName(party[last.side])} · agent`, reason: cap(last.why), at: last.at }
+      : { id: id(), side: "both", kind: "agent", staffVisible: false, action: `No deal · stopped at ${MAX_MESSAGES} messages`, actor: "SupplySwipe · system", reason: "Back to both owners", at: last.at },
+  );
+  return rows;
+}
+
+const dealFrom = (o: Outcome, buyerId: string, supplierId: string): Deal => ({
+  id: DEAL_ID,
+  negotiationId: NEGOTIATION_ID,
+  buyerId,
+  supplierId,
+  status: "proposed",
+  terms: o.terms!,
+  approvals: [],
 });
+
+const fresh = (): Store => {
+  // The demo starts with Aisyah's swipe on Ayam Segar already negotiated.
+  const o = runEngine("mak-ngah", "ayam-segar", "09:04");
+  return {
+    deal: dealFrom(o, "mak-ngah", "ayam-segar"),
+    negotiation: { buyerId: "mak-ngah", supplierId: "ayam-segar", messages: o.messages, result: o.result },
+    log: [...initialLog(), ...negotiationRows(o, "mak-ngah", "ayam-segar")],
+    // The seed already holds Aisyah's post and swipe, so repeating those steps adds no duplicates.
+    logKeys: ["post:chicken", "swipe:buyer:ayam-segar"],
+    wakil: { buyer: { ...DEFAULT_WAKIL.buyer }, supplier: { ...DEFAULT_WAKIL.supplier } },
+    postedRequest: false,
+  };
+};
 
 let store: Store | null = null;
 const listeners = new Set<() => void>();
@@ -179,6 +248,43 @@ export function publicNumbers() {
   return { ...PUBLIC };
 }
 
+export function business(id: string): Business {
+  return BUSINESSES[id];
+}
+
+/** The two businesses in a deal. */
+export function parties(deal: Pick<Deal, "buyerId" | "supplierId">) {
+  return { buyer: BUSINESSES[deal.buyerId], supplier: BUSINESSES[deal.supplierId] };
+}
+
+/** Public prices around a deal: the supplier's list price, the buyer's target, market and last week. */
+export function publicPrices(deal: Pick<Deal, "buyerId" | "supplierId">) {
+  return {
+    listPerKg: SUPPLIER_PROFILES[deal.supplierId]?.listPerKg ?? PUBLIC.supplierListPerKg,
+    targetPerKg: BUYER_PROFILES[deal.buyerId]?.targetPerKg ?? PUBLIC.buyerTargetPerKg,
+    marketPerKg: PUBLIC.marketPerKg,
+    lastWeekPerKg: PUBLIC.lastWeekPerKg,
+    onTime: SUPPLIER_PROFILES[deal.supplierId]?.onTime ?? "",
+  };
+}
+
+/** Owner and staff names for one side of a deal. */
+export function people(deal: Pick<Deal, "buyerId" | "supplierId">, side: Side) {
+  const id = side === "buyer" ? deal.buyerId : deal.supplierId;
+  const profile = side === "buyer" ? BUYER_PROFILES[id] : SUPPLIER_PROFILES[id];
+  return { owner: BUSINESSES[id].owner, staff: profile?.staff ?? "Staff", staffTitle: profile?.staffTitle ?? "staff", short: BUSINESSES[id].short };
+}
+
+/** The last swipe that ended with no deal before the first message: who, and the public and own numbers. */
+export function getNoDeal() {
+  const nd = load().noDeal ?? { side: "buyer" as Side, counterpartId: "fresh-poultry" };
+  const counterpart = BUSINESSES[nd.counterpartId];
+  const theirsPerKg = nd.side === "buyer" ? SUPPLIER_PROFILES[nd.counterpartId].listPerKg : BUYER_PROFILES[nd.counterpartId].targetPerKg;
+  const ownPerKg = nd.side === "buyer" ? BUYER_PROFILES[ME.buyer.businessId].maxPerKg : SUPPLIER_PROFILES[ME.supplier.businessId].floorPerKg;
+  const others = (nd.side === "buyer" ? SUPPLIER_CARDS : BUYER_CARDS).filter((c) => c.id !== nd.counterpartId);
+  return { side: nd.side, counterpart, theirsPerKg, ownPerKg, others: clone(others) };
+}
+
 /** Rule-based feed (no AI): buyers see suppliers, suppliers see buyer requests. */
 export async function getFeed(side: Side): Promise<Counterpart[]> {
   const remote = await json<Counterpart[]>(await backend(`/feed?side=${side}`));
@@ -211,10 +317,29 @@ export async function startNegotiation(side: Side, counterpartId: string): Promi
   const card = (side === "buyer" ? SUPPLIER_CARDS : BUYER_CARDS).find((c) => c.id === counterpartId);
   const who = side === "buyer" ? "Aisyah · kitchen lead" : "Sales rep · Ayam Segar";
   await log(
-    { side, kind: "human", staffVisible: true, action: `Swiped right on ${card?.name.replace(" Enterprise", "") ?? counterpartId}`, actor: who, reason: card ? `${card.fit}% fit, ${card.why}` : "", at: counterpartId === "ayam-segar" ? "09:04" : undefined },
+    { side, kind: "human", staffVisible: true, action: `Swiped right on ${card?.name.replace(" Enterprise", "") ?? counterpartId}`, actor: who, reason: card ? `${card.fit}% fit, ${card.why}` : "" },
     `swipe:${side}:${counterpartId}`,
   );
-  if (counterpartId === "fresh-poultry") return { id: "n-0139", noDeal: true };
+
+  // The swiper's own business on one side, the swiped card on the other.
+  const buyerId = side === "buyer" ? ME.buyer.businessId : counterpartId;
+  const supplierId = side === "buyer" ? counterpartId : ME.supplier.businessId;
+  const s = load();
+  const o = runEngine(buyerId, supplierId, nowHHMM());
+  if (o.reason === "no_overlap") {
+    s.noDeal = { side, counterpartId };
+    await log({ side, kind: "agent", staffVisible: false, action: `No deal with ${BUSINESSES[counterpartId].short} · 0 messages`, actor: `${wakilName(side === "buyer" ? buyerId : supplierId)} · agent`, reason: "Their limit and yours don't overlap. Neither limit was shown." });
+    return { id: NO_DEAL_ID, noDeal: true };
+  }
+
+  s.negotiation = { buyerId, supplierId, messages: o.messages, result: o.result };
+  if (o.result === "deal") {
+    s.deal = dealFrom(o, buyerId, supplierId);
+    // A new deal: earlier approvals, asks and the sealed record belong to the old one.
+    s.logKeys = s.logKeys.filter((k) => !/^(approve|sealed|memory|ask):/.test(k));
+  }
+  s.log.push(...negotiationRows(o, buyerId, supplierId));
+  save();
   return { id: NEGOTIATION_ID, noDeal: false };
 }
 
@@ -231,26 +356,31 @@ export async function getNegotiation(id: string, viewer: Side): Promise<Negotiat
   const remote = await json<NegotiationView>(await backend(`/negotiations/${id}?viewer=${viewer}`));
   if (remote) return remote;
 
-  const own = SEALED_LIMITS[viewer];
+  const n = load().negotiation;
+  const buyer = BUYER_PROFILES[n.buyerId];
+  const supplier = SUPPLIER_PROFILES[n.supplierId];
+  // Only the viewer's own sealed limit is in the view; the band's other end comes from public numbers.
+  const own = viewer === "buyer" ? buyer.maxPerKg : supplier.floorPerKg;
   const band =
     viewer === "buyer"
       ? { lo: +(PUBLIC.marketPerKg - 0.3).toFixed(2), hi: own }
-      : { lo: own, hi: +(PUBLIC.buyerTargetPerKg - 0.5).toFixed(2) };
+      : { lo: own, hi: +(buyer.targetPerKg - 0.5).toFixed(2) };
+  const prices = [...n.messages.flatMap((m) => (m.pricePerKg != null ? [m.pricePerKg] : [])), band.lo, band.hi, PUBLIC.marketPerKg];
   return {
     id,
     viewer,
-    buyerId: "mak-ngah",
-    supplierId: "ayam-segar",
+    buyerId: n.buyerId,
+    supplierId: n.supplierId,
     item: "Chicken breast, skinless",
-    qtyLabel: "50 kg weekly",
+    qtyLabel: `${buyer.qtyKg} kg weekly`,
     marketPerKg: PUBLIC.marketPerKg,
     ownLimitPerKg: own,
     band,
-    scale: { lo: 11.7, hi: 12.9 },
-    messages: clone(TRANSCRIPT),
-    maxMessages: 10,
+    scale: { lo: Math.floor((Math.min(...prices) - 0.1) * 10) / 10, hi: Math.ceil((Math.max(...prices) + 0.1) * 10) / 10 },
+    messages: clone(n.messages),
+    maxMessages: MAX_MESSAGES,
     dealId: DEAL_ID,
-    result: "deal",
+    result: n.result,
   };
 }
 
@@ -261,11 +391,12 @@ export async function getDeal(id: string): Promise<Deal> {
   return remote ?? clone(load().deal);
 }
 
-const ownerName = (side: Side) => ME[side].owner;
-const actorLabel = (side: Side, role: Role) =>
-  role === "owner"
-    ? side === "buyer" ? "Mak Ngah · owner" : "Encik Roslan · owner, Ayam Segar"
-    : side === "buyer" ? "Aisyah · kitchen lead" : "Sales rep · Ayam Segar";
+const ownerName = (side: Side) => people(load().deal, side).owner;
+const actorLabel = (side: Side, role: Role) => {
+  const p = people(load().deal, side);
+  if (role === "owner") return side === "buyer" ? `${p.owner} · owner` : `${p.owner} · owner, ${p.short}`;
+  return side === "buyer" ? `${p.staff} · ${p.staffTitle}` : `${p.staff} · ${p.short}`;
+};
 
 export function approvalLimit(side: Side, role: Role): number {
   return role === "owner" ? Infinity : ME[side].staffLimit;
@@ -287,7 +418,7 @@ export async function approve(dealId: string, side: Side, role: Role): Promise<A
   if (d.approvals.some((a) => a.side === side)) return { ok: false, reason: "already" };
 
   const at = role === "owner" ? (side === "buyer" ? SEALED_TIMES.buyerOwner : SEALED_TIMES.supplierOwner) : nowHHMM();
-  const by = role === "owner" ? ownerName(side) : ME[side].staff;
+  const by = role === "owner" ? ownerName(side) : people(d, side).staff;
   d.approvals.push({ by, side, role, at });
   const reason =
     side === "buyer"
@@ -300,7 +431,7 @@ export async function approve(dealId: string, side: Side, role: Role): Promise<A
     d.status = "sealed";
     d.poNumber = "PO-2210-0142";
     await log({ side: "both", kind: "approval", staffVisible: false, action: "Deal record created", actor: "SupplySwipe · system", reason: "Both owners approved", at }, `sealed:${d.id}`);
-    await log({ side: "buyer", kind: "agent", staffVisible: false, action: "Saved memory", actor: "Wakil Mak Ngah · agent", reason: "Ayam Segar takes 7-day terms; trial until 5 Nov", at }, `memory:${d.id}:buyer`);
+    await log({ side: "buyer", kind: "agent", staffVisible: false, action: "Saved memory", actor: `${wakilName(d.buyerId)} · agent`, reason: `${people(d, "supplier").short} takes ${pay(d.terms.paymentDays)}; trial until 5 Nov`, at }, `memory:${d.id}:buyer`);
   } else {
     d.status = side === "buyer" ? "buyer_approved" : "supplier_approved";
   }
@@ -380,7 +511,9 @@ export async function resetDemo(): Promise<void> {
 
 // ---------- Own sealed limit ----------
 
-export async function getOwnLimit(side: Side): Promise<number> {
+/** The caller's own sealed limit: buyer maximum or supplier floor. Defaults to the demo's own business on that side. */
+export async function getOwnLimit(side: Side, businessId: string = ME[side].businessId): Promise<number> {
   const remote = await json<number>(await backend(`/limits/own?side=${side}`));
-  return remote ?? SEALED_LIMITS[side];
+  if (remote != null) return remote;
+  return side === "buyer" ? BUYER_PROFILES[businessId].maxPerKg : SUPPLIER_PROFILES[businessId].floorPerKg;
 }

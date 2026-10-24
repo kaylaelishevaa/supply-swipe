@@ -6,6 +6,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Deal, NegotiationView, Side } from "@/lib/types";
+import * as api from "@/lib/api";
 import { lastPrice, rmTotal, termsLine, useNegotiationReplay } from "@/lib/negotiation";
 import { MessageBar } from "./MessageBar";
 import { PriceRail } from "./PriceRail";
@@ -15,20 +16,22 @@ import { Wakil } from "./Wakil";
 import { Button } from "./Button";
 import { RoleSwitcher } from "./RoleSwitcher";
 
-const NAME: Record<Side, string> = { buyer: "Wakil Mak Ngah", supplier: "Wakil Ayam Segar" };
 const DOT: Record<Side, string> = { buyer: "#6A5CF0", supplier: "#0E8A76" };
 
 export function NegotiationDesktop({ view, deal }: { view: NegotiationView; deal?: Deal }) {
   const router = useRouter();
-  const r = useNegotiationReplay(view.messages, 1500);
+  const r = useNegotiationReplay(view.messages);
   const listRef = useRef<HTMLDivElement>(null);
+  const NAME: Record<Side, string> = { buyer: api.wakilName(view.buyerId), supplier: api.wakilName(view.supplierId) };
+  const biz = api.parties(view);
+  const agreed = view.result === "deal";
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [r.step]);
 
   const met = r.shown >= view.messages.length;
-  const dealPrice = met ? view.messages[view.messages.length - 1].pricePerKg : undefined;
+  const dealPrice = met && agreed ? view.messages[view.messages.length - 1].pricePerKg : undefined;
   const pose = (s: Side) => (r.dealFound ? "happy" : r.speaking === s ? "speak" : r.next === s ? "think" : "idle");
   const cur = r.shown ? r.visible[r.shown - 1] : null;
   const curB = cur?.side === "buyer";
@@ -45,11 +48,11 @@ export function NegotiationDesktop({ view, deal }: { view: NegotiationView; deal
             transition: "opacity .4s, transform .4s",
           }}
         />
-        <Wakil side={s} width={180} height={190} pose={pose(s)} turn={s === "buyer" ? (r.speaking === "buyer" ? 42 : 28) : r.speaking === "supplier" ? -42 : -28} className="absolute inset-0" />
+        <Wakil side={s} width={180} height={190} pose={pose(s)} turn={s === "buyer" ? (r.speaking === "buyer" ? 42 : 28) : r.speaking === "supplier" ? -42 : -28} logo={biz[s].logo} className="absolute inset-0" />
       </div>
       <div className="text-center">
         <div className="text-[15px] font-semibold">{NAME[s]}</div>
-        <div className="text-[12px] text-muted">{s === "buyer" ? "Buyer · Balanced · trust 92" : "Supplier · Firm · on time 9 of 10"}</div>
+        <div className="text-[12px] text-muted">{s === "buyer" ? "Buyer · Balanced" : `Supplier · Firm · on time ${api.publicPrices(view).onTime}`}</div>
       </div>
       <div className="h-3.5">{r.next === s && !r.dealFound && <TypingDots color={DOT[s]} />}</div>
     </div>
@@ -59,11 +62,19 @@ export function NegotiationDesktop({ view, deal }: { view: NegotiationView; deal
     <div className="flex h-screen min-h-[720px] flex-col bg-bg text-ink tabular-nums">
       <div className="flex h-[60px] flex-none items-center gap-5 border-b border-line bg-white px-8">
         <img src="/logos/supplyswipe-lockup.png" alt="SupplySwipe" className="-ml-2 block h-[34px] w-auto" />
-        <div className="text-[12px] text-muted">Orbyte module · Restoran Mak Ngah</div>
+        <div className="text-[12px] text-muted">
+          Orbyte module · {biz.buyer.name} × {biz.supplier.name}
+        </div>
         <div className="flex-1" />
-        <button onClick={r.restart} className="whitespace-nowrap rounded-full border border-line px-3 py-1.5 text-[12px] text-muted">
-          Replay
-        </button>
+        {r.done ? (
+          <button onClick={r.restart} className="whitespace-nowrap rounded-full border border-line px-3 py-1.5 text-[12px] text-muted">
+            Replay
+          </button>
+        ) : (
+          <button onClick={r.skip} className="whitespace-nowrap rounded-full bg-ink px-3.5 py-1.5 text-[12px] font-semibold text-white">
+            Skip
+          </button>
+        )}
         <RoleSwitcher bordered />
       </div>
 
@@ -72,7 +83,9 @@ export function NegotiationDesktop({ view, deal }: { view: NegotiationView; deal
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <div className="text-[22px] font-semibold">Live negotiation</div>
-              <div className="mt-0.5 text-[13px] text-muted">Chicken breast, skinless, grade A · 50 kg weekly · Mon and Thu before 9am · PJ</div>
+              <div className="mt-0.5 text-[13px] text-muted">
+                {view.item} · {view.qtyLabel}
+              </div>
             </div>
             <div className="flex w-[220px] flex-col gap-1.5">
               <MessageBar visible={r.visible} max={view.maxMessages} height={6} />
@@ -80,7 +93,7 @@ export function NegotiationDesktop({ view, deal }: { view: NegotiationView; deal
                 <span className="font-semibold text-ink">
                   {r.shown} of {view.maxMessages}
                 </span>{" "}
-                messages · limit 10
+                messages · limit {view.maxMessages}
               </div>
             </div>
           </div>
@@ -157,21 +170,23 @@ export function NegotiationDesktop({ view, deal }: { view: NegotiationView; deal
             className="flex min-h-0 flex-1 flex-col justify-center gap-2.5 rounded-[20px] border-[1.5px] bg-white p-[18px]"
             style={{ borderColor: r.dealFound ? "#0E8A76" : "#E4E2EF", opacity: r.dealFound ? 1 : 0.35, transition: "opacity .4s" }}
           >
-            <div className="text-[12px] font-semibold text-amber-text">{r.dealFound ? "Deal found · sending to both owners" : "Negotiating · limits sealed on both sides"}</div>
+            <div className="text-[12px] font-semibold text-amber-text">
+              {!r.dealFound ? "Negotiating · limits sealed on both sides" : agreed ? "Deal found · sending to both owners" : `No deal within ${view.maxMessages} messages · back to both owners`}
+            </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-[32px] font-semibold tracking-[-0.02em]">{deal ? rmTotal(deal.terms.weeklyTotal) : ""}</span>
+              <span className="text-[32px] font-semibold tracking-[-0.02em]">{deal && agreed ? rmTotal(deal.terms.weeklyTotal) : "—"}</span>
               <span className="text-[13px] text-muted">per week</span>
             </div>
-            <div className="text-[12px] text-muted">{deal ? termsLine(deal.terms) : ""}</div>
+            <div className="text-[12px] text-muted">{deal && agreed ? termsLine(deal.terms) : ""}</div>
             <div className="mt-1 grid grid-cols-2 gap-2">
-              <Button variant={r.dealFound ? "approve" : "disabled"} height={46} onClick={() => router.push(`/approve/${view.dealId}`)}>
+              <Button variant={r.dealFound && agreed ? "approve" : "disabled"} height={46} onClick={() => router.push(`/approve/${view.dealId}`)}>
                 Approve
               </Button>
               <Button variant="secondary" height={46} fontSize={13} onClick={() => router.push(`/approve/${view.dealId}/counter`)}>
                 Counter via Wakil
               </Button>
             </div>
-            <div className="text-[11px] text-muted">Ayam Segar&apos;s owner is approving too. Nothing is created until both tap.</div>
+            <div className="text-[11px] text-muted">{biz.supplier.short}&apos;s owner is approving too. Nothing is created until both tap.</div>
           </div>
         </div>
       </div>

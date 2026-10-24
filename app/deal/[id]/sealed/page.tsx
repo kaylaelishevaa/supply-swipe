@@ -6,26 +6,20 @@ import Link from "next/link";
 import * as api from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { rmTotal, termsLine } from "@/lib/negotiation";
-import type { Approval } from "@/lib/types";
+import type { Approval, Deal } from "@/lib/types";
 import { Screen } from "@/components/Screen";
 import { StatusBar } from "@/components/StatusBar";
 import { Wakil } from "@/components/Wakil";
 import { BusinessLogo } from "@/components/BusinessLogo";
 
-const BIZ = {
-  buyer: { name: "Restoran Mak Ngah", logo: "/logos/mak-ngah.png" },
-  supplier: { name: "Ayam Segar Enterprise", logo: "/logos/ayam-segar.png" },
-};
-const ROLE_LABEL = { buyer: { owner: "owner", staff: "kitchen lead" }, supplier: { owner: "owner", staff: "sales rep" } };
-
-function ApprovalRow({ a }: { a: Approval }) {
-  const b = BIZ[a.side];
+function ApprovalRow({ a, deal }: { a: Approval; deal: Deal }) {
+  const b = api.parties(deal)[a.side];
   return (
     <div className="flex items-center gap-2.5">
       <BusinessLogo src={b.logo} name={b.name} size={36} />
       <div className="flex-1">
         <div className="text-[13px] font-semibold">
-          {a.by} · {ROLE_LABEL[a.side][a.role]}
+          {a.by} · {a.role === "owner" ? "owner" : api.people(deal, a.side).staffTitle}
         </div>
         <div className="text-[11px] text-muted">{b.name}</div>
       </div>
@@ -63,8 +57,8 @@ export default function SealedPage({ params }: { params: { id: string } }) {
       <div className="relative h-[250px] flex-none">
         <div className="absolute left-1/2 top-10 -ml-[150px] h-[200px] w-[300px] rounded-full bg-teal-soft" />
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-center">
-          <Wakil side="buyer" width={170} height={230} pose="happy" turn={30} />
-          <Wakil side="supplier" width={170} height={230} pose="happy" turn={-30} style={{ marginLeft: -40 }} />
+          <Wakil side="buyer" width={170} height={230} pose="happy" turn={30} logo={api.parties(deal).buyer.logo} />
+          <Wakil side="supplier" width={170} height={230} pose="happy" turn={-30} logo={api.parties(deal).supplier.logo} style={{ marginLeft: -40 }} />
         </div>
       </div>
       <div className="flex-none px-5 pt-1.5 text-center">
@@ -79,7 +73,7 @@ export default function SealedPage({ params }: { params: { id: string } }) {
         <div className="text-[12px] leading-[1.5] text-muted">{termsLine(deal.terms, { price: false })} from 27 Oct</div>
         <div className="h-px bg-line" />
         {ordered.map((a) => (
-          <ApprovalRow key={a.side} a={a} />
+          <ApprovalRow key={a.side} a={a} deal={deal} />
         ))}
       </div>
       <div className="mx-4 mt-2.5 flex flex-none items-center gap-3 rounded-[22px] bg-white px-3.5 py-3 shadow-card">

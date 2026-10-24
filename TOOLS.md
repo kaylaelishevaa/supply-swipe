@@ -18,7 +18,7 @@ The source for `submission/SDC2026_<TeamName>_TechDeclaration.pdf`. It follows t
 
 ### 2.1 System Architecture Overview
 
-The user opens the Next.js web app, deployed on Replit, on a phone. Every read and write goes through one module (`lib/api.ts`), which calls the Python FastAPI backend and falls back to built-in synthetic data when the backend can't be reached; the hosted demo runs on that fallback. The backend runs the negotiation engine: two Wakil agents exchange at most 10 structured messages, and code checks each offer against the sender's own sealed limit. It also enforces staff approval limits, seals a deal only when both owners approve, and keeps an append-only activity log. Data is held in memory or, optionally, synced to Supabase Postgres. Optionally, the engine asks Claude Haiku 5.5 (Anthropic API) to draft each message as JSON; without it, a rule-based fallback produces the negotiation.
+The user opens the Next.js web app, deployed on Replit, on a phone. Every read and write goes through one module (`lib/api.ts`), which calls the Python FastAPI backend and falls back to built-in synthetic data when the backend can't be reached; the hosted demo runs on that fallback. The backend runs the negotiation engine: two Wakil agents exchange at most 20 structured messages, and code checks each offer against the sender's own sealed limit. It also enforces staff approval limits, seals a deal only when both owners approve, and keeps an append-only activity log. Data is held in memory or, optionally, synced to Supabase Postgres. Optionally, the engine asks Claude Haiku 5.5 (Anthropic API) to draft each message as JSON; without it, a rule-based fallback produces the negotiation.
 
 ### 2.2 Languages, Frameworks & Libraries
 

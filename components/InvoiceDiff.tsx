@@ -10,6 +10,8 @@ export interface InvoiceLines {
   paymentDays: number;
 }
 
+const payTerms = (days: number) => (days === 0 ? "COD" : `${days} days`);
+
 export function compareInvoice(terms: Terms, inv: InvoiceLines) {
   // Free delivery applies above 40 kg, per the pinned delivery rule.
   const agreedDelivery = terms.qtyKgWeekly > 40 ? 0 : 10;
@@ -19,7 +21,7 @@ export function compareInvoice(terms: Terms, inv: InvoiceLines) {
     { key: "qty", label: "Chicken breast · weekly", agreed: `${terms.qtyKgWeekly} kg`, invoice: `${inv.qtyKg} kg`, bad: inv.qtyKg !== terms.qtyKgWeekly },
     { key: "price", label: "Price per kg", agreed: `RM${terms.pricePerKg.toFixed(2)}`, invoice: `RM${inv.pricePerKg.toFixed(2)}`, bad: inv.pricePerKg !== terms.pricePerKg },
     { key: "delivery", label: "Delivery", agreed: agreedDelivery ? `RM${agreedDelivery.toFixed(2)}` : "Free", invoice: inv.deliveryFee ? `RM${inv.deliveryFee.toFixed(2)}` : "Free", bad: inv.deliveryFee !== agreedDelivery },
-    { key: "terms", label: "Terms", agreed: `${terms.paymentDays} days`, invoice: `${inv.paymentDays} days`, bad: inv.paymentDays !== terms.paymentDays },
+    { key: "terms", label: "Terms", agreed: payTerms(terms.paymentDays), invoice: payTerms(inv.paymentDays), bad: inv.paymentDays !== terms.paymentDays },
   ];
   return { rows, agreedTotal, invoiceTotal, mismatches: rows.filter((r) => r.bad).length, overpay: invoiceTotal - agreedTotal };
 }

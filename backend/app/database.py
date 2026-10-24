@@ -326,7 +326,7 @@ async def get_negotiation_view(nego_id: str, viewer: Side) -> NegotiationView:
         band=band,
         scale={"lo": 11.70, "hi": 12.90},
         messages=messages,
-        maxMessages=10,
+        maxMessages=20,
         dealId="SS-0142",
         result="deal"
     )

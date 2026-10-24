@@ -23,8 +23,9 @@ const COUNTER_MESSAGES = 4;
 export default function CounterPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { side, role } = useDemo();
-  const own = useApi(() => api.getOwnLimit(side), [side]);
   const deal = useApi(() => api.getDeal(params.id), [params.id]);
+  const ownId = deal ? (side === "buyer" ? deal.buyerId : deal.supplierId) : undefined;
+  const own = useApi(() => (ownId ? api.getOwnLimit(side, ownId) : Promise.resolve(undefined)), [side, ownId]);
   const view = useApi(() => (deal ? api.getNegotiation(deal.negotiationId, side) : Promise.resolve(undefined)), [deal?.negotiationId, side]);
   const used = view?.messages.length ?? 0;
   const more = view ? Math.min(COUNTER_MESSAGES, view.maxMessages - used) : COUNTER_MESSAGES;
@@ -109,7 +110,7 @@ export default function CounterPage({ params }: { params: { id: string } }) {
 
       <div className="px-4 pt-2">
         <div className="text-[12px] text-muted">
-          {deal ? `${rm(deal.terms.pricePerKg)}/kg · ${deal.terms.qtyKgWeekly} kg ${dayList(deal.terms.days)} · ${deal.terms.paymentDays}-day terms` : ""}
+          {deal ? `${rm(deal.terms.pricePerKg)}/kg · ${deal.terms.qtyKgWeekly} kg ${dayList(deal.terms.days)} · ${deal.terms.paymentDays === 0 ? "COD" : `${deal.terms.paymentDays}-day terms`}` : ""}
         </div>
       </div>
 
@@ -154,7 +155,7 @@ export default function CounterPage({ params }: { params: { id: string } }) {
         </div>
 
         <div className="flex items-center gap-1.5">
-          <Wakil side={side} width={76} height={80} pose={pose} turn={-16} bust style={{ margin: "-10px -4px -6px -10px" }} />
+          <Wakil side={side} width={76} height={80} pose={pose} turn={-16} bust logo={ownId ? api.business(ownId).logo : undefined} style={{ margin: "-10px -4px -6px -10px" }} />
           <div className="flex-1">
             <div className="text-[20px] font-extrabold tracking-[-0.02em]">Counter via Wakil</div>
             <div className="text-[12px] text-muted">Tell it one thing. It picks up the same chat.</div>
@@ -210,7 +211,7 @@ export default function CounterPage({ params }: { params: { id: string } }) {
           </Link>
         ) : (
           <div className="text-center text-[12px] text-muted">
-            {buyer ? "Ayam Segar's owner sees the new offer, not your note." : "Mak Ngah sees the new offer, not your note."}
+            {deal ? `${api.people(deal, buyer ? "supplier" : "buyer").owner} sees the new offer, not your note.` : ""}
           </div>
         )}
       </div>

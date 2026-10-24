@@ -34,6 +34,7 @@ export function Wakil({
   interactive = false,
   spin = false,
   look,
+  logo,
   className = "",
   style,
 }: {
@@ -47,6 +48,8 @@ export function Wakil({
   spin?: boolean;
   /** Live look for the S2a preview. Without it the agent reads the saved look for its side. */
   look?: { color: string; hat: string; face: string };
+  /** Business logo on the agent's chest; defaults to the demo's own business on that side. */
+  logo?: string;
   className?: string;
   style?: React.CSSProperties;
 }) {
@@ -78,7 +81,7 @@ export function Wakil({
   const d = DEFAULTS[side];
   return (
     <div className={`relative flex-none ${className}`} style={{ width, height, ...style }}>
-      {mode !== "3d" && <WakilAvatar side={side} width={width} height={height} pose={pose} className="absolute inset-0" />}
+      {mode !== "3d" && <WakilAvatar side={side} width={width} height={height} pose={pose} logo={logo} className="absolute inset-0" />}
       {mode !== "2d" && (
         <wakil-agent
           ref={ref}
@@ -86,7 +89,7 @@ export function Wakil({
           color={look?.color ?? d.color}
           hat={look?.hat ?? d.hat}
           face={look?.face ?? d.face}
-          logo={d.logo}
+          logo={logo ?? d.logo}
           pose={pose}
           turn={String(turn)}
           {...(bust ? { bust: "" } : {})}

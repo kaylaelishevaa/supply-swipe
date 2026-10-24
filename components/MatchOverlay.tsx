@@ -8,11 +8,13 @@ import { Wakil } from "./Wakil";
 export function MatchOverlay({
   side,
   counterpartName,
+  counterpartLogo,
   onWatch,
   onClose,
 }: {
   side: Side;
   counterpartName: string;
+  counterpartLogo: string;
   onWatch: () => void;
   onClose: () => void;
 }) {
@@ -32,8 +34,8 @@ export function MatchOverlay({
       aria-label="Wakil sedang nego"
     >
       <div className="flex h-[200px] w-full items-end justify-center">
-        <Wakil side="buyer" width={160} height={200} pose="speak" turn={38} />
-        <Wakil side="supplier" width={160} height={200} pose="speak" turn={-38} style={{ marginLeft: -24 }} />
+        <Wakil side="buyer" width={160} height={200} pose="speak" turn={38} logo={side === "buyer" ? undefined : counterpartLogo} />
+        <Wakil side="supplier" width={160} height={200} pose="speak" turn={-38} logo={side === "supplier" ? undefined : counterpartLogo} style={{ marginLeft: -24 }} />
       </div>
       <div className="text-[30px] font-semibold tracking-[-0.01em]">Wakil sedang nego</div>
       <div className="max-w-[280px] text-[14px] leading-[1.5] text-muted">

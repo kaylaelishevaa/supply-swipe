@@ -37,7 +37,7 @@ Small cafés and restaurants renegotiate prices with three to eight suppliers al
 
 ### Solution
 
-Each business sets its limits once: a public target and a sealed maximum (buyer) or floor (supplier). A swipe right starts a negotiation between the two businesses' Wakils: at most 10 structured messages, with code checking every offer against the sender's own sealed limit. The deal stays a proposal until both owners approve, and staff can approve only under an owner-set limit. Approval pins the terms, opens a chat that cannot change them, checks the supplier's invoice against them, and writes every step to an append-only activity log.
+Each business sets its limits once: a public target and a sealed maximum (buyer) or floor (supplier). A swipe right starts a negotiation between the two businesses' Wakils: at most 20 structured messages, with code checking every offer against the sender's own sealed limit. The deal stays a proposal until both owners approve, and staff can approve only under an owner-set limit. Approval pins the terms, opens a chat that cannot change them, checks the supplier's invoice against them, and writes every step to an append-only activity log.
 
 ### Key Features
 

@@ -22,7 +22,8 @@ export function ApprovalSheet({ deal }: { deal: Deal }) {
   const mine = deal.approvals.some((a) => a.side === "buyer");
   const theirs = deal.approvals.some((a) => a.side === "supplier");
   const view = useApi(() => api.getNegotiation(deal.negotiationId, "buyer"), [deal.negotiationId]);
-  const pub = api.publicNumbers();
+  const pub = api.publicPrices(deal);
+  const biz = api.parties(deal);
   const price = deal.terms.pricePerKg;
   const vsLastWeek = price - pub.lastWeekPerKg;
   const vsMarket = price - pub.marketPerKg;
@@ -87,7 +88,7 @@ export function ApprovalSheet({ deal }: { deal: Deal }) {
           <ChevronLeft size={14} />
           <span>Feed</span>
         </button>
-        <div className="text-[12px] text-muted">Restoran Mak Ngah</div>
+        <div className="text-[12px] text-muted">{biz.buyer.name}</div>
       </div>
 
       <div className="px-4 pb-3">
@@ -153,11 +154,12 @@ export function ApprovalSheet({ deal }: { deal: Deal }) {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <Wakil side="buyer" width={50} height={54} pose="idle" turn={-20} bust style={{ margin: "-8px -4px" }} />
+          <Wakil side="buyer" width={50} height={54} pose="idle" turn={-20} bust logo={biz.buyer.logo} style={{ margin: "-8px -4px" }} />
           <div className="flex-1">
-            <div className="text-[14px] font-semibold">Wakil Mak Ngah found a deal</div>
+            <div className="text-[14px] font-semibold">{api.wakilName(deal.buyerId)} found a deal</div>
             <div className="text-[11px] text-muted">
-              With Ayam Segar Enterprise{view ? ` · ${view.messages.length} of ${view.maxMessages} messages` : ""}
+              With {biz.supplier.name}
+              {view ? ` · ${view.messages.length} of ${view.maxMessages} messages` : ""}
             </div>
           </div>
           {deal.status !== "sealed" && deal.status !== "rejected" && !mine && (
@@ -191,8 +193,12 @@ export function ApprovalSheet({ deal }: { deal: Deal }) {
           </div>
         </div>
         <div className="text-[11px] leading-[1.45] text-muted">
-          Why: market {rm(pub.marketPerKg)}, supplier on time 9 of 10,{" "}
-          {vsMarket > 0 ? `free delivery covers the extra ${rm(vsMarket)}.` : `${rm(-vsMarket)} under market.`}
+          Why: market {rm(pub.marketPerKg)}, supplier on time {pub.onTime},{" "}
+          {vsMarket <= 0
+            ? `${rm(-vsMarket)} under market.`
+            : deal.terms.deliveryRule.startsWith("Free")
+              ? `free delivery covers the extra ${rm(vsMarket)}.`
+              : `a reliable supplier for ${rm(vsMarket)} over market.`}
         </div>
 
         {deal.status === "sealed" ? (
@@ -228,8 +234,8 @@ export function ApprovalSheet({ deal }: { deal: Deal }) {
             <span className="mt-[5px] h-2 w-2 flex-none rounded-full bg-amber" />
             <span>
               {theirs
-                ? "Ayam Segar's owner already approved. Your tap creates the deal."
-                : "Ayam Segar's owner is approving too. Nothing is created until both tap."}
+                ? `${biz.supplier.short}'s owner already approved. Your tap creates the deal.`
+                : `${biz.supplier.short}'s owner is approving too. Nothing is created until both tap.`}
             </span>
           </div>
         )}

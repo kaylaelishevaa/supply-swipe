@@ -34,10 +34,12 @@ export default function NegotiationPage({ params }: { params: { id: string } }) 
 
 function NegotiationMobile({ view, deal }: { view: NegotiationView; deal?: Deal }) {
   const router = useRouter();
-  const r = useNegotiationReplay(view.messages, 1500);
+  const r = useNegotiationReplay(view.messages);
   const [tab, setTab] = useState<"chat" | "chart">("chat");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const wakilName = { buyer: "Wakil Mak Ngah", supplier: "Wakil Ayam Segar" };
+  const wakilName = { buyer: api.wakilName(view.buyerId), supplier: api.wakilName(view.supplierId) };
+  const logo = { buyer: api.business(view.buyerId).logo, supplier: api.business(view.supplierId).logo };
+  const agreed = view.result === "deal";
 
   // Auto-scroll to the newest message, and again ~550ms later once the sheet has opened.
   useEffect(() => {
@@ -50,7 +52,7 @@ function NegotiationMobile({ view, deal }: { view: NegotiationView; deal?: Deal 
   const buyerPrice = lastPrice(r.visible, "buyer");
   const supplierPrice = lastPrice(r.visible, "supplier");
   const met = r.shown >= view.messages.length;
-  const dealPrice = met ? view.messages[view.messages.length - 1].pricePerKg : undefined;
+  const dealPrice = met && agreed ? view.messages[view.messages.length - 1].pricePerKg : undefined;
   const pose = (s: "buyer" | "supplier") => (r.dealFound ? "happy" : r.speaking === s ? "speak" : r.next === s ? "think" : "idle");
   const glow = (s: "buyer" | "supplier") => r.speaking === s || met;
   const typing = r.shown < view.messages.length && !r.dealFound;
@@ -68,9 +70,15 @@ function NegotiationMobile({ view, deal }: { view: NegotiationView; deal?: Deal 
             {view.item} · {view.qtyLabel}
           </div>
         </div>
-        <button onClick={r.restart} className="whitespace-nowrap rounded-full border border-line bg-white px-2.5 py-1.5 text-[12px] text-muted">
-          Replay
-        </button>
+        {r.done ? (
+          <button onClick={r.restart} className="whitespace-nowrap rounded-full border border-line bg-white px-2.5 py-1.5 text-[12px] text-muted">
+            Replay
+          </button>
+        ) : (
+          <button onClick={r.skip} className="whitespace-nowrap rounded-full bg-ink px-3 py-1.5 text-[12px] font-semibold text-white">
+            Skip
+          </button>
+        )}
       </div>
 
       <div className="flex flex-none flex-col gap-1.5 px-4 pb-2.5">
@@ -82,7 +90,7 @@ function NegotiationMobile({ view, deal }: { view: NegotiationView; deal?: Deal 
             </span>{" "}
             messages
           </span>
-          <span>Hard limit 10, then it asks you</span>
+          <span>Hard limit {view.maxMessages}, then it asks you</span>
         </div>
       </div>
 
@@ -119,6 +127,7 @@ function NegotiationMobile({ view, deal }: { view: NegotiationView; deal?: Deal 
                     height={112}
                     pose={pose(slot)}
                     turn={slot === "buyer" ? (r.speaking === "buyer" ? 42 : 28) : r.speaking === "supplier" ? -42 : -28}
+                    logo={logo[slot]}
                     className="absolute inset-0"
                   />
                 </div>
@@ -201,8 +210,10 @@ function NegotiationMobile({ view, deal }: { view: NegotiationView; deal?: Deal 
       )}
 
       <div className="flex flex-none items-center gap-2.5 bg-white px-4 pb-7 pt-3 shadow-[0_-8px_24px_rgba(60,55,120,0.06)]">
-        <span className="h-2 w-2 flex-none rounded-full" style={{ background: r.dealFound ? "#0E8A76" : "#6A5CF0" }} />
-        <div className="flex-1 text-[13px] font-semibold">{r.dealFound ? "Deal found · sending to both owners" : "Negotiating · limits sealed on both sides"}</div>
+        <span className="h-2 w-2 flex-none rounded-full" style={{ background: r.dealFound ? (agreed ? "#0E8A76" : "#E8664A") : "#6A5CF0" }} />
+        <div className="flex-1 text-[13px] font-semibold">
+          {!r.dealFound ? "Negotiating · limits sealed on both sides" : agreed ? "Deal found · sending to both owners" : "No deal · back to both owners"}
+        </div>
         <div className="text-[11px] text-muted">You approve the result</div>
       </div>
 
@@ -213,11 +224,21 @@ function NegotiationMobile({ view, deal }: { view: NegotiationView; deal?: Deal 
         aria-hidden={!r.sheetOpen}
       >
         <div className="h-1 w-9 self-center rounded-[2px] bg-line" />
+        {!agreed ? (
+          <>
+            <div className="text-[12px] font-semibold text-coral-text">No deal within {view.maxMessages} messages</div>
+            <div className="text-[13px] leading-[1.45] text-muted">Neither Wakil can move further inside its limits. Both owners get the transcript and decide.</div>
+            <Button variant="secondary" height={48} onClick={() => router.push("/feed")}>
+              Back to feed
+            </Button>
+          </>
+        ) : (
+          <>
         <div className="text-[12px] font-semibold text-amber-text">Deal found · waiting for both owners</div>
         <div className="flex items-baseline gap-1.5">
           <span className="text-[28px] font-extrabold tracking-[-0.02em]">{deal ? rmTotal(deal.terms.weeklyTotal) : ""}</span>
           <span className="text-[13px] text-muted">
-            {deal ? `per week · ${rm(deal.terms.pricePerKg)}/kg · ${deal.terms.paymentDays}-day terms` : ""}
+            {deal ? `per week · ${rm(deal.terms.pricePerKg)}/kg · ${deal.terms.paymentDays === 0 ? "COD" : `${deal.terms.paymentDays}-day terms`}` : ""}
           </span>
         </div>
         <div className="grid grid-cols-[2fr_1fr] gap-2">
@@ -228,6 +249,8 @@ function NegotiationMobile({ view, deal }: { view: NegotiationView; deal?: Deal 
             Counter
           </Button>
         </div>
+          </>
+        )}
       </div>
     </Screen>
   );

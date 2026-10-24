@@ -3,19 +3,19 @@
 // already sealed, or rejected. Used by S4, S4s and P3.
 
 import Link from "next/link";
+import * as api from "@/lib/api";
 import type { Deal, Side } from "@/lib/types";
 import { useDemo } from "@/lib/demo-context";
 import { Button } from "./Button";
 import { CheckIcon } from "./Icons";
-
-const OWNER: Record<Side, string> = { buyer: "Mak Ngah", supplier: "Encik Roslan" };
-const BIZ: Record<Side, string> = { buyer: "Mak Ngah", supplier: "Ayam Segar" };
 
 /** This side approved; the other side has not yet. Offers the demo switch to the other owner. */
 export function WaitingForOther({ deal, side }: { deal: Deal; side: Side }) {
   const { setSide, setRole } = useDemo();
   const mine = deal.approvals.find((a) => a.side === side);
   const other: Side = side === "buyer" ? "supplier" : "buyer";
+  const OWNER = { buyer: api.people(deal, "buyer").owner, supplier: api.people(deal, "supplier").owner };
+  const BIZ = { buyer: api.parties(deal).buyer.short, supplier: api.parties(deal).supplier.short };
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2.5 rounded-[22px] bg-teal-soft px-3.5 py-3">

@@ -12,6 +12,7 @@ export function WakilAvatar({
   width,
   height,
   pose = "idle",
+  logo: logoProp,
   className = "",
   style,
 }: {
@@ -19,13 +20,14 @@ export function WakilAvatar({
   width: number;
   height: number;
   pose?: WakilPose;
+  logo?: string;
   className?: string;
   style?: React.CSSProperties;
 }) {
   const d = Math.round(Math.min(width, height) * 0.78);
   const ring = side === "buyer" ? "#6A5CF0" : "#0E8A76";
   const soft = side === "buyer" ? "#E6E3FF" : "#D7F3EC";
-  const logo = side === "buyer" ? LOGO.makNgah : LOGO.ayamSegar;
+  const logo = logoProp ?? (side === "buyer" ? LOGO.makNgah : LOGO.ayamSegar);
   const anim = pose === "speak" ? "animate-pulse" : pose === "happy" ? "animate-bounce" : "";
   return (
     <div className={`relative flex flex-none items-end justify-center ${className}`} style={{ width, height, ...style }}>

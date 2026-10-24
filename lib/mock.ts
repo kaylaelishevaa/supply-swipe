@@ -1,7 +1,7 @@
 // Local mock data. All synthetic, matches the handoff README "Demo data" exactly.
 // Only lib/api.ts should import this file. Screens read data through lib/api.ts.
 
-import type { Business, Counterpart, Deal, LogRow, NegMessage, Terms, WakilProfile, Side } from "./types";
+import type { Business, Counterpart, LogRow, WakilProfile, Side } from "./types";
 
 export const LOGO = {
   makNgah: "/logos/mak-ngah.png",
@@ -19,9 +19,9 @@ export const LOGO = {
 export const BUSINESSES: Record<string, Business> = {
   "mak-ngah": { id: "mak-ngah", name: "Restoran Mak Ngah", short: "Mak Ngah", owner: "Mak Ngah", logo: LOGO.makNgah, side: "buyer", location: "Petaling Jaya, Selangor" },
   "ayam-segar": { id: "ayam-segar", name: "Ayam Segar Enterprise", short: "Ayam Segar", owner: "Encik Roslan", logo: LOGO.ayamSegar, side: "supplier", location: "Shah Alam" },
-  "kampung-poultry": { id: "kampung-poultry", name: "Kampung Poultry KL", short: "Kampung Poultry", owner: "Owner", logo: LOGO.kampungPoultry, side: "supplier", location: "Kepong" },
-  "fresh-poultry": { id: "fresh-poultry", name: "Fresh Poultry Puchong", short: "Fresh Poultry", owner: "Owner", logo: LOGO.freshPoultry, side: "supplier", location: "Puchong" },
-  "seng-huat": { id: "seng-huat", name: "Kedai Kopi Seng Huat", short: "Seng Huat", owner: "Owner", logo: LOGO.sengHuat, side: "buyer", location: "Subang" },
+  "kampung-poultry": { id: "kampung-poultry", name: "Kampung Poultry KL", short: "Kampung Poultry", owner: "Mr Tan", logo: LOGO.kampungPoultry, side: "supplier", location: "Kepong" },
+  "fresh-poultry": { id: "fresh-poultry", name: "Fresh Poultry Puchong", short: "Fresh Poultry", owner: "Puan Salmah", logo: LOGO.freshPoultry, side: "supplier", location: "Puchong" },
+  "seng-huat": { id: "seng-huat", name: "Kedai Kopi Seng Huat", short: "Seng Huat", owner: "Uncle Lim", logo: LOGO.sengHuat, side: "buyer", location: "Subang" },
   "kak-yah": { id: "kak-yah", name: "Warung Kak Yah", short: "Kak Yah", owner: "Kak Yah", logo: LOGO.kakYah, side: "buyer", location: "Shah Alam" },
   "dapur-catering": { id: "dapur-catering", name: "Dapur Catering Sdn Bhd", short: "Dapur Catering", owner: "Owner", logo: LOGO.dapurCatering, side: "buyer", location: "Klang" },
 };
@@ -54,51 +54,64 @@ export const NEGOTIATION_ID = "n-0142";
 export const DEAL_ID = "SS-0142";
 export const NO_DEAL_ID = "n-0139";
 
-export const TRANSCRIPT: NegMessage[] = [
-  { n: 1, side: "buyer", type: "ask", headline: "50 kg · Mon, Thu · PJ", text: "Can you deliver 50 kg skinless chicken breast to PJ every Mon and Thu? Lead time?", why: "request posted by Aisyah, kitchen lead", at: "09:04" },
-  { n: 2, side: "supplier", type: "offer", pricePerKg: 12.8, headline: "RM12.80/kg", text: "Yes, next-day. RM12.80/kg, RM10 delivery, COD.", why: "list price, new buyer", at: "09:04" },
-  { n: 3, side: "buyer", type: "counter", pricePerKg: 12.0, headline: "RM12.00/kg", text: "RM12.00/kg, free delivery, 14-day terms, standing weekly order.", why: "market RM12.10, 50 kg every week", at: "09:05" },
-  { n: 4, side: "supplier", type: "counter", pricePerKg: 12.5, headline: "RM12.50/kg", text: "RM12.50/kg, delivery waived above 40 kg, 7-day terms.", why: "50 kg weekly clears MOQ 30 kg", at: "09:05" },
-  { n: 5, side: "buyer", type: "counter", pricePerKg: 12.2, headline: "RM12.20/kg", text: "RM12.20/kg, 7-day terms, starting with a 2-week trial.", why: "market RM12.10, supplier on time 9 of 10", at: "09:05" },
-  { n: 6, side: "supplier", type: "accept", pricePerKg: 12.2, headline: "RM12.20/kg", text: "Accepts RM12.20/kg, free delivery, 7-day terms, 2-week trial.", why: "volume covers delivery cost", at: "09:06" },
-];
+/** Most messages two Wakils may exchange before the negotiation goes back to the owners. */
+export const MAX_MESSAGES = 20;
 
-export const TERMS: Terms = {
-  item: "Chicken breast, skinless, grade A",
-  qtyKgWeekly: 50,
-  days: ["Mon", "Thu"],
-  before: "9am",
-  pricePerKg: 12.2,
-  deliveryRule: "Free delivery above 40 kg",
-  paymentDays: 7,
-  trialWeeks: 2,
-  weeklyTotal: 610,
+/**
+ * What each business brings to a negotiation. Public numbers can be shown to anyone; the sealed
+ * maximum (buyer) or floor (supplier) is used only by that business's own Wakil and never shown
+ * to the other side.
+ */
+export interface BuyerProfile {
+  id: string;
+  staff: string;
+  staffTitle: string;
+  /** Public target price, RM/kg. */
+  targetPerKg: number;
+  /** Sealed maximum, RM/kg. */
+  maxPerKg: number;
+  qtyKg: number;
+  days: string[];
+  /** Payment terms the buyer can offer; 0 = cash on delivery. */
+  paymentDays: number;
+  area: string;
+}
+
+export interface SupplierProfile {
+  id: string;
+  staff: string;
+  staffTitle: string;
+  /** Public list price, RM/kg. */
+  listPerKg: number;
+  /** Sealed floor, RM/kg. */
+  floorPerKg: number;
+  moqKg: number;
+  freeDeliveryAboveKg: number;
+  deliveryFee: number;
+  /** Payment terms the supplier allows; 0 = cash on delivery. */
+  paymentDays: number;
+  days: string[];
+  onTime: string;
+}
+
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export const BUYER_PROFILES: Record<string, BuyerProfile> = {
+  "mak-ngah": { id: "mak-ngah", staff: "Aisyah", staffTitle: "kitchen lead", targetPerKg: 13.0, maxPerKg: 12.5, qtyKg: 50, days: ["Mon", "Thu"], paymentDays: 7, area: "PJ" },
+  "seng-huat": { id: "seng-huat", staff: "Ah Seng", staffTitle: "counter lead", targetPerKg: 13.2, maxPerKg: 12.9, qtyKg: 20, days: ["Wed", "Sat"], paymentDays: 0, area: "Subang" },
+  "kak-yah": { id: "kak-yah", staff: "Farah", staffTitle: "cook", targetPerKg: 12.6, maxPerKg: 12.3, qtyKg: 35, days: WEEKDAYS, paymentDays: 14, area: "Shah Alam" },
 };
 
-export const initialDeal = (): Deal => ({
-  id: DEAL_ID,
-  negotiationId: NEGOTIATION_ID,
-  buyerId: "mak-ngah",
-  supplierId: "ayam-segar",
-  status: "proposed",
-  terms: TERMS,
-  approvals: [],
-});
+export const SUPPLIER_PROFILES: Record<string, SupplierProfile> = {
+  "ayam-segar": { id: "ayam-segar", staff: "Sales rep", staffTitle: "sales rep", listPerKg: 12.8, floorPerKg: 11.8, moqKg: 30, freeDeliveryAboveKg: 40, deliveryFee: 10, paymentDays: 7, days: WEEKDAYS, onTime: "9 of 10" },
+  "kampung-poultry": { id: "kampung-poultry", staff: "Sales rep", staffTitle: "sales rep", listPerKg: 12.6, floorPerKg: 12.15, moqKg: 20, freeDeliveryAboveKg: 40, deliveryFee: 10, paymentDays: 0, days: ["Tue", "Fri"], onTime: "8 of 10" },
+  "fresh-poultry": { id: "fresh-poultry", staff: "Sales rep", staffTitle: "sales rep", listPerKg: 13.8, floorPerKg: 12.9, moqKg: 50, freeDeliveryAboveKg: 40, deliveryFee: 10, paymentDays: 14, days: WEEKDAYS, onTime: "10 of 10" },
+};
 
-/** Seed log: everything that happened before the owners approve. Approvals are appended live. */
+/** Seed log: Aisyah's request and swipe. The negotiation's own rows are added when it runs. */
 export const initialLog = (): LogRow[] => [
   { id: "l1", side: "buyer", kind: "human", staffVisible: true, action: "Posted request · 50 kg chicken breast", actor: "Aisyah · kitchen lead", reason: "Weekly stock count", at: "09:02" },
   { id: "l2", side: "buyer", kind: "human", staffVisible: true, action: "Swiped right on Ayam Segar", actor: "Aisyah · kitchen lead", reason: "92% fit, delivers PJ Mon–Sat", at: "09:04" },
-  { id: "l3", side: "buyer", kind: "agent", staffVisible: false, action: "Opened negotiation", actor: "Wakil Mak Ngah · agent", reason: "Limits sealed, max not shared", at: "09:04" },
-  { id: "l4", side: "buyer", kind: "rule", staffVisible: false, action: "Draft blocked · would reveal your maximum", actor: "Rule check · system", reason: "Rewritten before sending. No private value left the app.", at: "09:05" },
-  { id: "l5", side: "buyer", kind: "agent", staffVisible: false, action: "Countered RM12.00/kg", actor: "Wakil Mak Ngah · agent", reason: "Market RM12.10, 50 kg every week", at: "09:05" },
-  { id: "l6", side: "buyer", kind: "rule", staffVisible: false, action: "Offer blocked · RM12.60 is above your limit", actor: "Rule check · system", reason: "Wakil re-drafted inside your sealed max", at: "09:05" },
-  { id: "l7", side: "buyer", kind: "agent", staffVisible: false, action: "Countered RM12.20/kg, 2-week trial", actor: "Wakil Mak Ngah · agent", reason: "Supplier on time 9 of 10", at: "09:05" },
-  { id: "l8", side: "both", kind: "agent", staffVisible: false, action: "Deal proposed · 6 of 10 messages", actor: "Wakil Ayam Segar · agent", reason: "Volume covers delivery cost", at: "09:06" },
-  // Supplier-side rows. The buyer never sees these.
-  { id: "s1", side: "supplier", kind: "agent", staffVisible: false, action: "Joined negotiation with Restoran Mak Ngah", actor: "Wakil Ayam Segar · agent", reason: "Request is on the PJ Mon and Thu run", at: "09:04" },
-  { id: "s2", side: "supplier", kind: "agent", staffVisible: false, action: "Countered RM12.50/kg", actor: "Wakil Ayam Segar · agent", reason: "50 kg weekly clears MOQ 30 kg", at: "09:05" },
-  { id: "s3", side: "supplier", kind: "agent", staffVisible: false, action: "Accepted RM12.20/kg", actor: "Wakil Ayam Segar · agent", reason: "Volume covers delivery cost", at: "09:06" },
 ];
 
 /** Rows written when the deal is sealed, in the order the S6 reference shows them. */

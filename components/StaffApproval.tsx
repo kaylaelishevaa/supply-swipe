@@ -17,33 +17,27 @@ import { Button } from "./Button";
 import { ChevronLeft, XIcon } from "./Icons";
 import { RejectedNote, SealedLink, WaitingForOther } from "./ApprovalStates";
 
-const COPY: Record<Side, { title: string; signedIn: string; owner: string; them: string; logo: string; wakil: string; answer: string; footer: string }> = {
-  buyer: {
-    title: "Live negotiation",
-    signedIn: "Signed in as Aisyah · kitchen lead",
-    owner: "Mak Ngah",
-    them: "Ayam Segar",
-    logo: "/logos/ayam-segar.png",
-    wakil: "Wakil Mak Ngah",
-    answer: "She gets one notification. You'll see her answer here.",
-    footer: "Staff approve up to RM500. Above that, only the owner can. Written to the log.",
-  },
-  supplier: {
-    title: "Approvals",
-    signedIn: "Signed in as Sales rep · Ayam Segar",
-    owner: "Encik Roslan",
-    them: "Restoran Mak Ngah",
-    logo: "/logos/mak-ngah.png",
-    wakil: "Wakil Ayam Segar",
-    answer: "Encik Roslan gets one notification. You'll see the answer here.",
-    footer: "Reps approve up to RM300. Above that, only the owner can. Written to the log.",
-  },
-};
+/** Screen copy for the staff member on one side of the deal; names come from the deal's own businesses. */
+function copy(deal: Deal, side: Side, limit: number) {
+  const other: Side = side === "buyer" ? "supplier" : "buyer";
+  const me = api.people(deal, side);
+  const them = api.parties(deal)[other];
+  return {
+    title: side === "buyer" ? "Live negotiation" : "Approvals",
+    signedIn: side === "buyer" ? `Signed in as ${me.staff} · ${me.staffTitle}` : `Signed in as ${me.staff} · ${me.short}`,
+    owner: me.owner,
+    them: them.short,
+    logo: them.logo,
+    wakil: api.wakilName(side === "buyer" ? deal.buyerId : deal.supplierId),
+    answer: `${me.owner} gets one notification. You'll see the answer here.`,
+    footer: `${side === "buyer" ? "Staff" : "Reps"} approve up to RM${limit}. Above that, only the owner can. Written to the log.`,
+  };
+}
 
 export function StaffApproval({ deal, side }: { deal: Deal; side: Side }) {
   const router = useRouter();
-  const c = COPY[side];
   const limit = api.approvalLimit(side, "staff");
+  const c = copy(deal, side, limit);
   const amount = deal.terms.weeklyTotal;
   const above = amount > limit;
   const approvedHere = deal.approvals.some((a) => a.side === side);

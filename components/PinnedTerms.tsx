@@ -32,7 +32,8 @@ export function PinnedTerms({ deal, actions }: { deal: Deal; actions?: ReactNode
         </span>
         <span>{t.deliveryRule}</span>
         <span>
-          {t.paymentDays}-day terms{t.trialWeeks ? ` · ${t.trialWeeks}-week trial` : ""}
+          {t.paymentDays === 0 ? "COD" : `${t.paymentDays}-day terms`}
+          {t.trialWeeks ? ` · ${t.trialWeeks}-week trial` : ""}
         </span>
       </div>
       {actions && <div className="mt-0.5 grid grid-cols-2 gap-2">{actions}</div>}

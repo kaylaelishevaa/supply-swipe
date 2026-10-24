@@ -32,18 +32,25 @@ export function ConvergenceChart({
   width?: number;
   height?: number;
 }) {
-  // Round r = the r-th priced message from each side.
-  const rounds: { round: number; buyer?: number; supplier?: number }[] = [1, 2, 3].map((round) => ({ round }));
+  // Round r = the r-th priced message from each side; the accept adds a final round where both meet.
+  // The number of rounds comes from the whole transcript, so the axis stays put during the replay.
+  const offers = (msgs: NegMessage[], side: "buyer" | "supplier") => msgs.filter((m) => m.side === side && m.pricePerKg != null && m.type !== "accept");
+  const accepted = view.messages.some((m) => m.type === "accept");
+  const total = Math.max(1, offers(view.messages, "buyer").length, offers(view.messages, "supplier").length) + (accepted ? 1 : 0);
+  const rounds: { round: number; buyer?: number; supplier?: number }[] = Array.from({ length: total }, (_, i) => ({ round: i + 1 }));
   (["buyer", "supplier"] as const).forEach((side) => {
-    visible.filter((m) => m.side === side && m.pricePerKg != null).forEach((m, i) => {
+    offers(visible, side).forEach((m, i) => {
       if (rounds[i]) rounds[i][side] = m.pricePerKg;
     });
   });
   const deal = visible.find((m) => m.type === "accept")?.pricePerKg;
-  // The accept closes round 3 for both sides at the deal price.
-  if (deal != null) rounds[2] = { round: 3, buyer: deal, supplier: deal };
+  if (deal != null) rounds[total - 1] = { round: total, buyer: deal, supplier: deal };
   const big = height > 150;
   const fs = big ? 10 : 9;
+  const xTicks = rounds.map((r) => r.round).filter((r) => total <= 6 || r % 2 === 1 || r === total);
+  const yStep = big ? 0.2 : 0.4;
+  const yTicks: number[] = [];
+  for (let v = Math.ceil(view.scale.lo / yStep) * yStep; v <= view.scale.hi + 1e-9; v += yStep) yTicks.push(+v.toFixed(2));
 
   return (
     <ComposedChart width={width} height={height} data={rounds} margin={{ top: 6, right: big ? 8 : 6, bottom: 0, left: 0 }}>
@@ -52,9 +59,9 @@ export function ConvergenceChart({
       <XAxis
         dataKey="round"
         type="number"
-        domain={[0.75, 3.25]}
-        ticks={[1, 2, 3]}
-        tickFormatter={(r) => `round ${r}`}
+        domain={[0.75, total + 0.25]}
+        ticks={xTicks}
+        tickFormatter={(r) => (total > 4 ? `${r}` : `round ${r}`)}
         tick={{ fontSize: fs, fill: "#6E6C86" }}
         axisLine={false}
         tickLine={false}
@@ -62,7 +69,7 @@ export function ConvergenceChart({
       />
       <YAxis
         domain={[view.scale.lo, view.scale.hi]}
-        ticks={big ? [12.0, 12.4, 12.8] : [12.0, 12.8]}
+        ticks={yTicks}
         tickFormatter={(v: number) => v.toFixed(2)}
         tick={{ fontSize: fs, fill: "#6E6C86" }}
         axisLine={false}
@@ -79,7 +86,7 @@ export function ConvergenceChart({
       <Line dataKey="buyer" stroke="#6A5CF0" strokeWidth={big ? 2.5 : 2} dot={{ r: big ? 4.5 : 3, fill: "#6A5CF0", stroke: "none" }} isAnimationActive={false} connectNulls />
       {dealFound && deal != null && (
         <ReferenceDot
-          x={3}
+          x={total}
           y={deal}
           r={big ? 7 : 5}
           fill="#fff"

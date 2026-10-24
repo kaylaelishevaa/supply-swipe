@@ -1,5 +1,5 @@
 "use client";
-// P3 Approval inbox (supplier owner): the "Needs you" card for Restoran Mak Ngah with tiles vs the
+// P3 Approval inbox (supplier owner): the "Needs you" card for the deal's buyer with tiles vs the
 // supplier's OWN floor and list price, why the Wakil said yes, Approve / Counter, and a rep-approved row.
 
 import { useState } from "react";
@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as api from "@/lib/api";
 import { useApi } from "@/lib/useApi";
-import { rmDiff, rmTotal, termsLine } from "@/lib/negotiation";
+import { dayList, rmDiff, rmTotal, termsLine } from "@/lib/negotiation";
 import type { Deal } from "@/lib/types";
 import { Screen } from "./Screen";
 import { StatusBar } from "./StatusBar";
@@ -23,13 +23,16 @@ export function ApprovalInbox({ deal }: { deal: Deal }) {
   const router = useRouter();
   const [rejecting, setRejecting] = useState(false);
   // The supplier's own floor, read only on the supplier's screen.
-  const floor = useApi(() => api.getOwnLimit("supplier"), []);
+  const floor = useApi(() => api.getOwnLimit("supplier", deal.supplierId), [deal.supplierId]);
   const buyerApproval = deal.approvals.find((a) => a.side === "buyer");
   const mine = deal.approvals.some((a) => a.side === "supplier");
   const open = deal.status !== "sealed" && deal.status !== "rejected" && !mine;
   const price = deal.terms.pricePerKg;
-  const listPrice = api.publicNumbers().supplierListPerKg;
+  const listPrice = api.publicPrices(deal).listPerKg;
   const repLimit = api.approvalLimit("supplier", "staff");
+  const biz = api.parties(deal);
+  const days = dayList(deal.terms.days);
+  const pays = deal.terms.paymentDays === 0 ? "cash on delivery" : `in ${deal.terms.paymentDays} days`;
 
   const approve = async () => {
     const r = await api.approve(deal.id, "supplier", "owner");
@@ -50,7 +53,9 @@ export function ApprovalInbox({ deal }: { deal: Deal }) {
           </Link>
           <div>
             <div className="text-[20px] font-extrabold tracking-[-0.02em]">Approvals</div>
-            <div className="text-[11px] text-muted">Ayam Segar · Encik Roslan</div>
+            <div className="text-[11px] text-muted">
+              {biz.supplier.short} · {biz.supplier.owner}
+            </div>
           </div>
         </div>
         <RoleSwitcher bordered />
@@ -60,9 +65,9 @@ export function ApprovalInbox({ deal }: { deal: Deal }) {
         <div className={`text-[12px] font-semibold ${open ? "text-amber-text" : "text-muted"}`}>{open ? "Needs you · 1" : "This week"}</div>
         <div className={`flex flex-col gap-3 rounded-[16px] border-[1.5px] bg-white p-3.5 ${open ? "border-amber" : deal.status === "rejected" ? "border-coral" : "border-teal"}`}>
           <div className="flex items-center gap-2.5">
-            <BusinessLogo src="/logos/mak-ngah.png" name="Restoran Mak Ngah" size={40} />
+            <BusinessLogo src={biz.buyer.logo} name={biz.buyer.name} size={40} />
             <div className="flex-1">
-              <div className="text-[14px] font-semibold">Restoran Mak Ngah</div>
+              <div className="text-[14px] font-semibold">{biz.buyer.name}</div>
               <div className="text-[11px] text-muted">
                 {buyerApproval ? `Owner approved ${buyerApproval.at}` : "Owner not approved yet"} ·{" "}
                 {deal.terms.weeklyTotal > repLimit ? "above" : "within"} rep limit RM{repLimit}
@@ -86,7 +91,7 @@ export function ApprovalInbox({ deal }: { deal: Deal }) {
           </div>
           <div className="rounded-[10px] bg-purple-soft px-3 py-2.5 text-[12px] leading-[1.45]">
             <span className="font-semibold text-purple-text">Why your Wakil said yes: </span>
-            above floor, PJ is already on your Mon and Thu route, buyer pays in 7 days.
+            above floor, {days} drops to {biz.buyer.short}, buyer pays {pays}.
           </div>
 
           {deal.status === "sealed" ? (
