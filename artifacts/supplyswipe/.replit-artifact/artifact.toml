@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "SupplySwipe"
+description = "SupplySwipe is a procurement prototype for food businesses: buyer and supplier Wakil agents negotiate weekly supply deals, owners approve terms, and staff track requests and invoices."
+version = "1.0.0"
+id = "artifacts/supplyswipe"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18383
+
+[services.development]
+run = "pnpm --filter @workspace/supplyswipe run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/supplyswipe", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/supplyswipe/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18383"
+BASE_PATH = "/"
