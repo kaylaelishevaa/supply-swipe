@@ -8,7 +8,7 @@ SupplySwipe is an Orbyte procurement prototype for small F&B businesses. It uses
 
 | Field | Details |
 | --- | --- |
-| **Team name** | SupplySwipe |
+| **Team name** | NylonDaBest |
 | **Team domain** | Domain 2 — Orbyte Smart SME Challenge: Less Busywork, Better Business |
 | **SDG track** | SDG 8 — Decent Work and Economic Growth (primary); SDG 12 — Responsible Consumption and Production (secondary) |
 | **Team leader** | Kayla Elisheva Siwi |
