@@ -1,12 +1,20 @@
-# Replit config: build once, then serve the production build on $PORT (default 3000).
-modules = ["nodejs-20"]
-run = "npm install && npm run build && npm start"
+modules = ["nodejs-24"]
 
 [deployment]
-build = ["sh", "-c", "npm install && npm run build"]
-run = ["sh", "-c", "npm start"]
-deploymentTarget = "cloudrun"
+router = "application"
+deploymentTarget = "autoscale"
 
-[[ports]]
-localPort = 3000
-externalPort = 80
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
