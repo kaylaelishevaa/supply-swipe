@@ -1,2 +1,3 @@
 - [Migration boundaries](migration-boundaries.md) — preserve the imported standalone demo; optional Supabase/FastAPI is not an invitation to replace its database.
 - [Browser testing](browser-testing.md) — use the environment-provided Chromium in this Nix workspace rather than a downloaded Linux binary.
+- [Submission requirements](submission-requirements.md) — organizer guide checklist for the public repository, README, license, PDFs, and honest platform proof.

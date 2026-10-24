@@ -23,8 +23,18 @@ SupplySwipe is an Orbyte procurement prototype for small F&B businesses. It uses
 | Live Demo Link | [Open the published app](https://supply-swipe--shariqnaumann.replit.app/) |
 | Guided demo | [Open the 20-step demo](https://supply-swipe--shariqnaumann.replit.app/demo) |
 | Pitch Deck | [Open the SupplySwipe pitch deck](https://supply-swipe--shariqnaumann.replit.app/supplyswipe-pitch-deck/) |
-| Pitch/Demo Video | **URL pending.** Add the public YouTube or video link here when one is available. |
+| Pitch/Demo Video | https://youtu.be/N1S1TWdS2Eg |
 | Public Replit deployment URL | [supply-swipe--shariqnaumann.replit.app](https://supply-swipe--shariqnaumann.replit.app/) |
+
+## Submission documents
+
+The final PDFs are in the top-level [`submission/`](submission/) folder:
+
+- [Preliminary Project Proposal](submission/SDC2026_NylonDaBest_Preliminary.pdf)
+- [Technical & Tools Declaration](submission/SDC2026_NylonDaBest_TechDeclaration.pdf)
+- [Replit Proof of Use](submission/REPLIT%20PROOF%20OF%20USE.pdf)
+
+The documents under `.migration-backup/submission/` are archived earlier drafts, not the final submission files.
 
 ## What it does
 
@@ -55,10 +65,10 @@ Install Node.js 24 and pnpm, then run:
 
 ```bash
 pnpm install
-pnpm --filter @workspace/supplyswipe run dev
+PORT=18383 BASE_PATH=/ pnpm --filter @workspace/supplyswipe run dev
 ```
 
-The app uses the workspace-provided `PORT` and `BASE_PATH` when started through its Replit workflow. To build the production frontend locally:
+Open `http://localhost:18383/`. The app uses the workspace-provided `PORT` and `BASE_PATH` when started through its Replit workflow. To build the production frontend locally:
 
 ```bash
 PORT=18383 BASE_PATH=/ NODE_ENV=production \
@@ -74,7 +84,7 @@ pnpm --filter @workspace/supplyswipe run typecheck
 pnpm run test:e2e
 ```
 
-The Playwright browser test uses Replit’s environment-provided Chromium when available.
+The Playwright browser test expects the SupplySwipe workflow to be running through Replit's preview proxy at `http://127.0.0.1:80`. It uses Replit’s environment-provided Chromium when available.
 
 ## Project structure
 
@@ -87,6 +97,7 @@ artifacts/
     public/                   App logos and optional 3D Wakil web component
   api-server/                 Replit Express API scaffold (not the imported demo API)
   supplyswipe-pitch-deck/     Separate Replit slides artifact
+submission/                   Final hackathon submission PDFs and Replit proof
 .migration-backup/
   backend/                    Original optional FastAPI/Supabase backend
   app/, components/, lib/     Preserved Vercel/Next.js source backup
@@ -100,6 +111,7 @@ The web app is a client-rendered Vite/React application. `artifacts/supplyswipe/
 ## How we used Replit
 
 - Imported the Vercel project into a pnpm workspace and ported its Next.js routes to a Vite + React web artifact.
+- Replit Agent assisted with the migration, debugging, pitch-deck creation, and submission-document preparation.
 - Use the Replit **SupplySwipe** workflow to run the app and the preview to explore the original flows.
 - The app is publicly published at [supply-swipe--shariqnaumann.replit.app](https://supply-swipe--shariqnaumann.replit.app/).
 - A separate SupplySwipe pitch-deck artifact is included in this workspace.
@@ -111,4 +123,4 @@ The web app is a client-rendered Vite/React application. `artifacts/supplyswipe/
 
 ## License
 
-The imported project includes an [Apache License 2.0](.migration-backup/LICENSE).
+This project is licensed under the [Apache License 2.0](LICENSE). Third-party dependencies retain their own licenses.
